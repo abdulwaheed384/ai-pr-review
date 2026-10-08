@@ -1,6 +1,10 @@
 resource "azurerm_resource_group" "rg" {
   name     = "rg-network-demo-ai"
   location = "UK South"
+  
+  tags = {
+    research_case = "PROM06-TC01"
+  }
 }
 
 resource "azurerm_virtual_network" "vnet" {
@@ -18,3 +22,4 @@ resource "azurerm_subnet" "subnet" {
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
+
