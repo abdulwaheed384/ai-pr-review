@@ -1,4 +1,4 @@
-name: Terraform Validate + AI Review
+name: PROM06 Experimental Security Review
 
 permissions:
   contents: read
@@ -9,16 +9,64 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      experiment_condition:
+        description: Experimental condition (A, B, or C)
+        required: true
+        type: choice
+        options:
+          - A
+          - B
+          - C
+        default: C
+      pr_number:
+        description: PR number to receive separate tool comments (optional)
+        required: false
+        type: string
+      base_ref:
+        description: Base branch used for changed-file AI context
+        required: true
+        type: string
+        default: main
+
+env:
+  EXPERIMENT_CONDITION: ${{ github.event.inputs.experiment_condition || 'C' }}
+  PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || '' }}
+  EXPERIMENT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+  BASE_REF: ${{ github.base_ref || github.event.inputs.base_ref || 'main' }}
 
 jobs:
-  terraform:
+  review:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Record experimental condition
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          Path("run-results").mkdir(exist_ok=True)
+          metadata = {
+              "experiment_condition": os.environ["EXPERIMENT_CONDITION"],
+              "pull_request_number": os.environ.get("PR_NUMBER") or None,
+              "base_ref": os.environ["BASE_REF"],
+              "experiment_commit_sha": os.environ["EXPERIMENT_COMMIT"],
+              "workflow_sha": os.environ["GITHUB_SHA"],
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "event_name": os.environ["GITHUB_EVENT_NAME"],
+              "started_at_utc": datetime.now(timezone.utc).isoformat(),
+          }
+          Path("run-results/experiment-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write("## PROM06 Experimental Security Review\n\n")
+              summary.write(f"Condition: **{metadata['experiment_condition']}**\n\n")
+          PY
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -29,32 +77,137 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        run: terraform init -backend=false
+        run: terraform -chdir=terraform init -backend=false
 
       - name: Terraform Format
-        run: terraform fmt -check -recursive
+        run: terraform -chdir=terraform fmt -check -recursive
 
       - name: Terraform Validate
-        run: terraform validate
+        run: terraform -chdir=terraform validate
 
-      - name: Install Python Dependencies
-        run: pip install requests
+      - name: Install Checkov 3.3.1
+        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
+        run: python -m pip install checkov==3.3.1
 
-      - name: Run AI Review
+      - name: Run Checkov
+        id: checkov
+        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
+        shell: bash
+        run: |
+          set +e
+          checkov -d terraform --framework terraform --output json > run-results/checkov-results.json 2> run-results/checkov-stderr.log
+          result=$?
+          set -e
+          echo "$result" > run-results/checkov-exit-code.txt
+          echo "exit_code=$result" >> "$GITHUB_OUTPUT"
+          checkov --version > run-results/checkov-version.txt 2>&1
+
+      - name: Render Checkov PR report
+        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
+        run: |
+          python ai/render_scanner_report.py \
+            --tool checkov \
+            --input run-results/checkov-results.json \
+            --version "$(cat run-results/checkov-version.txt)" \
+            --exit-code "$(cat run-results/checkov-exit-code.txt)" \
+            --condition "$EXPERIMENT_CONDITION" \
+            --output run-results/pr_comment_checkov.md
+
+      - name: Install tfsec 1.28.14
+        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/aquasecurity/tfsec/releases/download/v1.28.14/tfsec-linux-amd64 \
+            --output /usr/local/bin/tfsec
+          chmod +x /usr/local/bin/tfsec
+
+      - name: Run tfsec
+        id: tfsec
+        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
+        shell: bash
+        run: |
+          set +e
+          tfsec terraform --format json > run-results/tfsec-results.json 2> run-results/tfsec-stderr.log
+          result=$?
+          set -e
+          echo "$result" > run-results/tfsec-exit-code.txt
+          echo "exit_code=$result" >> "$GITHUB_OUTPUT"
+          tfsec --version > run-results/tfsec-version.txt 2>&1
+
+      - name: Render tfsec PR report
+        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
+        run: |
+          python ai/render_scanner_report.py \
+            --tool tfsec \
+            --input run-results/tfsec-results.json \
+            --version "$(cat run-results/tfsec-version.txt)" \
+            --exit-code "$(cat run-results/tfsec-exit-code.txt)" \
+            --condition "$EXPERIMENT_CONDITION" \
+            --output run-results/pr_comment_tfsec.md
+
+      - name: Setup Python dependencies
+        if: env.EXPERIMENT_CONDITION == 'B' || env.EXPERIMENT_CONDITION == 'C'
+        run: python -m pip install requests
+
+      - name: Run independent AI review
+        if: env.EXPERIMENT_CONDITION == 'B' || env.EXPERIMENT_CONDITION == 'C'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python ai/review_runner.py
 
-      - name: Post Comment
+      - name: Post Checkov PR comment
+        if: always() && (env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C') && env.PR_NUMBER != ''
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const body = fs.readFileSync('pr_comment.txt', 'utf8');
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            const path = 'run-results/pr_comment_checkov.md';
+            if (!fs.existsSync(path)) return;
+            const body = fs.readFileSync(path, 'utf8');
+            await github.rest.issues.createComment({
+              issue_number: Number(process.env.PR_NUMBER),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: body
+              body
             });
+
+      - name: Post tfsec PR comment
+        if: always() && (env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C') && env.PR_NUMBER != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'run-results/pr_comment_tfsec.md';
+            if (!fs.existsSync(path)) return;
+            const body = fs.readFileSync(path, 'utf8');
+            await github.rest.issues.createComment({
+              issue_number: Number(process.env.PR_NUMBER),
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Post AI PR comment
+        if: always() && (env.EXPERIMENT_CONDITION == 'B' || env.EXPERIMENT_CONDITION == 'C') && env.PR_NUMBER != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'run-results/pr_comment_ai.md';
+            if (!fs.existsSync(path)) return;
+            const body = fs.readFileSync(path, 'utf8');
+            await github.rest.issues.createComment({
+              issue_number: Number(process.env.PR_NUMBER),
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Upload raw research run outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prom06-${{ env.EXPERIMENT_CONDITION }}-${{ github.run_id }}
+          path: run-results/
+          if-no-files-found: ignore
+          retention-days: 90

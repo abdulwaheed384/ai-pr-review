@@ -1,220 +1,277 @@
+"""PR-diff based AI review with deterministic operational scoring."""
+
 import json
 import os
 import subprocess
-import requests
 import sys
 import time
+from pathlib import Path
+
+import requests
+
+
+ROOT = Path(__file__).resolve().parent.parent
+FINDING_CATEGORIES = {
+    "SECURITY_VULNERABILITY",
+    "POLICY_OR_COMPLIANCE",
+    "CONTEXT_DEPENDENT",
+    "POTENTIAL_FALSE_POSITIVE",
+}
+SEVERITIES = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
 
 
 def load_file(path):
-    with open(path, "r") as f:
-        return f.read()
+    return (ROOT / path).read_text(encoding="utf-8")
 
 
 def get_changed_terraform_code():
+    """Return only changed .tf files under terraform/, preserving PR-diff scope."""
     try:
-        base_ref = os.environ.get("GITHUB_BASE_REF", "main")
-        subprocess.run(["git", "fetch", "origin"], check=True)
-
+        base_ref = os.environ.get("GITHUB_BASE_REF") or os.environ.get("BASE_REF", "main")
+        subprocess.run(["git", "fetch", "origin", base_ref], cwd=ROOT, check=True)
         result = subprocess.run(
-            ["git", "diff", "--name-only", f"origin/{base_ref}"],
+            ["git", "diff", "--name-only", f"origin/{base_ref}...HEAD"],
+            cwd=ROOT,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
         )
 
-        files = result.stdout.splitlines()
-
-        content = ""
-        for f in files:
-            if f.startswith("terraform/") and f.endswith(".tf") and os.path.exists(f):
-                with open(f) as tf_file:
-                    content += f"\nFile: {f}\n{tf_file.read()}\n"
-
-        return content.strip()
-
-    except Exception as e:
-        print(f"Error collecting Terraform files: {e}")
-        return ""
+        parts = []
+        for relative_path in result.stdout.splitlines():
+            path = Path(relative_path)
+            if (
+                path.parts[0:1] == ("terraform",)
+                and path.suffix == ".tf"
+                and (ROOT / path).is_file()
+            ):
+                parts.append(f"\nFile: {path.as_posix()}\n{(ROOT / path).read_text(encoding='utf-8')}\n")
+        return "".join(parts).strip()
+    except Exception as exc:
+        raise RuntimeError(f"Could not collect changed Terraform files: {exc}") from exc
 
 
 def call_ai(prompt):
     api_key = os.environ.get("ANTHROPIC_API_KEY")
-
     if not api_key:
-        raise Exception("ANTHROPIC_API_KEY not set")
+        raise RuntimeError("ANTHROPIC_API_KEY is not set")
 
-    url = "https://api.anthropic.com/v1/messages"
-
-    headers = {
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json"
-    }
-
-    payload = {
-        "model": "claude-sonnet-4-6",
-        "max_tokens": 3000,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-
+    response = requests.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        },
+        json={
+            "model": "claude-sonnet-4-6",
+            "max_tokens": 3000,
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=90,
+    )
     if response.status_code != 200:
-        raise Exception(f"Claude API failed: {response.text}")
-
+        raise RuntimeError(f"Claude API returned HTTP {response.status_code}")
     data = response.json()
-    text = data["content"][0]["text"]
-
-    if not text.strip().endswith("}"):
-        raise Exception("Truncated response detected")
-
-    return text
+    text_blocks = [block["text"] for block in data.get("content", []) if block.get("type") == "text"]
+    if len(text_blocks) != 1:
+        raise RuntimeError("Claude response did not contain exactly one text block")
+    return text_blocks[0]
 
 
 def call_ai_with_retry(prompt, retries=2):
     for attempt in range(retries + 1):
         try:
             return call_ai(prompt)
-        except Exception as e:
-            print(f"⚠️ AI call failed (attempt {attempt+1}): {e}")
+        except Exception as exc:
+            print(f"AI call failed (attempt {attempt + 1}): {exc}", file=sys.stderr)
             if attempt == retries:
-                print("❌ All retries failed")
-                sys.exit(1)
+                raise
             time.sleep(2)
 
 
-def validate_json(response_text):
+def parse_model_json(response_text):
+    cleaned = response_text.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+        if cleaned.startswith("json"):
+            cleaned = cleaned[4:].lstrip()
     try:
-        cleaned = response_text.strip()
-
-        if cleaned.startswith("```"):
-            parts = cleaned.split("```")
-            if len(parts) >= 2:
-                cleaned = parts[1]
-            if cleaned.startswith("json"):
-                cleaned = cleaned[4:]
-            cleaned = cleaned.strip()
-
         return json.loads(cleaned)
-
-    except json.JSONDecodeError:
-        print("❌ AI output is not valid JSON")
-        print(response_text)
-        sys.exit(1)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"AI output is not valid JSON: {exc}") from exc
 
 
-def save_json(review):
-    with open("ai_output.json", "w") as f:
-        json.dump(review, f, indent=2)
+def validate_review(review):
+    required = {"summary", "findings", "policy_violations", "positives", "final_recommendation"}
+    if not isinstance(review, dict) or set(review) != required:
+        raise ValueError(f"AI response must contain exactly these fields: {sorted(required)}")
+    if not isinstance(review["summary"], str) or not isinstance(review["final_recommendation"], str):
+        raise ValueError("summary and final_recommendation must be strings")
+    if not isinstance(review["findings"], list) or len(review["findings"]) > 3:
+        raise ValueError("AI response findings must be a list of at most three items")
+    finding_by_id = {}
+    for index, finding in enumerate(review["findings"], start=1):
+        fields = {
+            "id", "category", "category_rationale", "severity", "title",
+            "description", "evidence", "impact", "recommendation",
+        }
+        if not isinstance(finding, dict) or set(finding) != fields:
+            raise ValueError(f"Finding {index} does not match the required schema")
+        if finding["category"] not in FINDING_CATEGORIES:
+            raise ValueError(f"Finding {index} has an invalid category")
+        if finding["severity"] not in SEVERITIES:
+            raise ValueError(f"Finding {index} has an invalid severity")
+        for field in fields:
+            if not isinstance(finding[field], str):
+                raise ValueError(f"Finding {index} field {field!r} must be a string")
+        if not finding["evidence"].strip() or not finding["category_rationale"].strip():
+            raise ValueError(f"Finding {index} must explain its code evidence and category")
+        if finding["id"] in finding_by_id:
+            raise ValueError("Finding IDs must be unique")
+        finding_by_id[finding["id"]] = finding
+    if not all(isinstance(review[field], list) for field in ("policy_violations", "positives")):
+        raise ValueError("policy_violations and positives must be lists")
+    if not all(isinstance(item, str) for item in review["positives"]):
+        raise ValueError("positives must contain strings")
+    for index, policy in enumerate(review["policy_violations"], start=1):
+        if (
+            not isinstance(policy, dict)
+            or set(policy) != {"finding_id", "policy_id", "policy_name", "severity"}
+            or policy["severity"] not in SEVERITIES
+            or not isinstance(policy["finding_id"], str)
+            or not isinstance(policy["policy_id"], str)
+            or not isinstance(policy["policy_name"], str)
+            or policy["finding_id"] not in finding_by_id
+            or policy["severity"] != finding_by_id[policy["finding_id"]]["severity"]
+        ):
+            raise ValueError(f"Policy mapping {index} must refer to a matching finding")
+    return review
 
 
-# 🔥 NEW: Risk grading logic
-def get_risk_grade(score):
-    if score >= 85:
-        return "A", "✅ Safe"
-    elif score >= 70:
-        return "B", "⚠️ Acceptable with improvements"
-    elif score >= 50:
-        return "C", "⚠️ Needs improvement"
+def calculate_operational_score(review, scoring):
+    """Apply the checked-in operational policy; the model never supplies score/verdict."""
+    score = scoring["base_score"]
+    penalties = scoring["severity_penalties"]
+    for finding in review["findings"]:
+        score += penalties[finding["severity"].lower()]
+    score = max(scoring.get("minimum_score", 0), min(scoring.get("maximum_score", 100), score))
+
+    approve_at = scoring["verdict_thresholds"]["approve"]
+    comments_at = scoring["verdict_thresholds"]["approve_with_comments"]
+    if score >= approve_at:
+        verdict = "APPROVE"
+    elif score >= comments_at:
+        verdict = "APPROVE_WITH_COMMENTS"
     else:
-        return "D", "🚨 High risk"
+        verdict = "DO_NOT_MERGE"
+
+    if any(item["severity"] == "CRITICAL" for item in review["findings"]):
+        risk_level = "CRITICAL"
+    elif score >= scoring["risk_thresholds"]["low"]:
+        risk_level = "LOW"
+    elif score >= scoring["risk_thresholds"]["medium"]:
+        risk_level = "MEDIUM"
+    elif score >= scoring["risk_thresholds"]["high"]:
+        risk_level = "HIGH"
+    else:
+        risk_level = "CRITICAL"
+    return score, verdict, risk_level
 
 
 def format_comment(review):
-    score = review.get("score", 0)
-    grade, status = get_risk_grade(score)
-
-    comment = f"""
-## 🤖 AI Security Review
-
-**Verdict:** {review.get('verdict')}
-**Score:** {score}/100  
-**Risk Level:** {review.get('risk_level')}
-
-### 📊 Risk Assessment
-- Grade: {grade}
-- Status: {status}
-
-### Summary
-{review.get('summary')}
-
-### Findings
-"""
-
-    for fnd in review.get("findings", []):
-        comment += f"""
-- **{fnd.get('severity')}** – {fnd.get('title')}
-  - {fnd.get('description')}
-  - Impact: {fnd.get('impact')}
-  - Fix: {fnd.get('recommendation')}
-"""
-
-    if review.get("policy_violations"):
-        comment += "\n### 🚨 Policy Violations\n"
-        for p in review["policy_violations"]:
-            comment += f"- **{p.get('policy_id')}** – {p.get('policy_name')} ({p.get('severity')})\n"
-
-    if review.get("positives"):
-        comment += "\n### Positives\n"
-        for p in review["positives"]:
-            comment += f"- {p}\n"
-
-    # 🔥 SOFT ENFORCEMENT WITH SCORE
-    if score < 70:
-        comment += f"""
-### ⚠️ Soft Enforcement Warning
-
-This PR is considered **HIGH RISK**:
-- Score: {score}/100
-- Grade: {grade}
-- Would be BLOCKED in strict enforcement mode
-"""
-
-    comment += "\n### Recommendation\n" + review.get("final_recommendation", "")
-
-    return comment
+    score = review["operational_score"]
+    condition = review["experiment_condition"]
+    lines = [
+        "## AI Security Review",
+        f"**Experiment condition:** {condition}",
+        "**Automated operational score:** "
+        f"{score}/100 — {review['risk_level']} — {review['verdict']}",
+        "*This workflow score is separate from the PROM06 researcher evaluation rubric.*",
+        "",
+        "### Summary",
+        review["summary"],
+        "",
+        "### Findings",
+    ]
+    if not review["findings"]:
+        lines.append("No findings reported by the AI reviewer.")
+    for finding in review["findings"]:
+        lines.extend([
+            f"- **{finding['severity']} · {finding['category']} · {finding['title']}**",
+            f"  - Category rationale: {finding['category_rationale']}",
+            f"  - Evidence: {finding['evidence']}",
+            f"  - Analysis: {finding['description']}",
+            f"  - Impact: {finding['impact']}",
+            f"  - Recommendation: {finding['recommendation']}",
+        ])
+    if review["policy_violations"]:
+        lines.extend(["", "### Policy mappings"])
+        for policy in review["policy_violations"]:
+            lines.append(
+                f"- **{policy['policy_id']}** — {policy['policy_name']} "
+                f"(finding {policy['finding_id']})"
+            )
+    if review["positives"]:
+        lines.extend(["", "### Positives"])
+        lines.extend(f"- {positive}" for positive in review["positives"])
+    lines.extend(["", "### Recommendation", review["final_recommendation"]])
+    return "\n".join(lines) + "\n"
 
 
-def save_comment(comment):
-    with open("pr_comment.txt", "w") as f:
-        f.write(comment)
+def write_json(path, value):
+    path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def main():
-    print("🚀 Starting AI Review...")
+    results_dir = ROOT / "run-results"
+    results_dir.mkdir(exist_ok=True)
+    condition = os.environ.get("EXPERIMENT_CONDITION", "C").upper()
+    if condition not in {"A", "B", "C"}:
+        raise ValueError("EXPERIMENT_CONDITION must be A, B, or C")
 
-    base_prompt = load_file("ai/prompt.txt")
-    policy = load_file("ai/policy.md")
-
-    prompt = base_prompt + "\n\nSecurity Policies:\n" + policy
-
-    tf_code = get_changed_terraform_code()
-
-    if not tf_code:
-        save_comment("No Terraform changes to review.")
+    terraform_code = get_changed_terraform_code()
+    if not terraform_code:
+        write_json(results_dir / "ai_output.json", {
+            "status": "skipped",
+            "reason": "No changed Terraform .tf files in the PR diff.",
+            "experiment_condition": condition,
+        })
+        (results_dir / "pr_comment_ai.md").write_text(
+            "## AI Security Review\n"
+            f"**Experiment condition:** {condition}\n\n"
+            "AI was not invoked because the PR diff contains no changed Terraform `.tf` files.\n",
+            encoding="utf-8",
+        )
         return
 
-    full_prompt = prompt + "\n\nTerraform Code:\n" + tf_code
-
-    response_text = call_ai_with_retry(full_prompt)
-    review = validate_json(response_text)
-
-    save_json(review)
-
-    comment = format_comment(review)
-    save_comment(comment)
-
-    print("📝 Comment generated successfully")
-    print("📊 Score-based soft enforcement active")
-
-    print("✅ AI Review completed")
+    prompt = load_file("ai/prompt.txt") + "\n\nSecurity Policies:\n" + load_file("ai/policy.md")
+    full_prompt = prompt + "\n\nChanged Terraform Code (PR diff only):\n" + terraform_code
+    raw_response = call_ai_with_retry(full_prompt)
+    (results_dir / "ai_raw_response.txt").write_text(raw_response, encoding="utf-8")
+    review = validate_review(parse_model_json(raw_response))
+    scoring = json.loads(load_file("ai/scoring.json"))
+    score, verdict, risk_level = calculate_operational_score(review, scoring)
+    review.update({
+        "operational_score": score,
+        "verdict": verdict,
+        "risk_level": risk_level,
+        "experiment_condition": condition,
+        "scoring_config": "ai/scoring.json",
+    })
+    write_json(results_dir / "ai_output.json", review)
+    (results_dir / "pr_comment_ai.md").write_text(format_comment(review), encoding="utf-8")
+    print("AI review completed; raw response and rendered output saved under run-results/.")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        print(f"AI review failed: {exc}", file=sys.stderr)
+        raise SystemExit(1)
