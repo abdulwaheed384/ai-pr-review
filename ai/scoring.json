@@ -1,7 +1,39 @@
 {
-  "high": -30,
-  "medium": -15,
-  "low": -5,
+  "model": "prom06-operational-pr-risk-v1",
   "base_score": 100,
-  "threshold": 70
+  "severity_penalties": {
+    "critical": -30,
+    "high": -30,
+    "medium": -15,
+    "low": -5
+  },
+  "minimum_score": 0,
+  "maximum_score": 100,
+  "verdict_thresholds": {
+    "approve": 85,
+    "approve_with_comments": 70
+  },
+  "risk_thresholds": {
+    "low": 85,
+    "medium": 70,
+    "high": 50
+  },
+  "rules": [
+    "Start at base_score and apply the matching penalty once for each AI finding, regardless of its category.",
+    "Clamp the result to minimum_score and maximum_score.",
+    "An AI finding with CRITICAL severity sets risk_level to CRITICAL; otherwise risk_level is derived from risk_thresholds.",
+    "At or above approve, verdict is APPROVE; at or above approve_with_comments, verdict is APPROVE_WITH_COMMENTS; below that, verdict is DO_NOT_MERGE."
+  ],
+  "research_rubric": {
+    "owner": "researcher",
+    "scale": "0-2 per dimension, evaluated manually from captured evidence",
+    "dimensions": [
+      "Detection correctness",
+      "Explanation accuracy",
+      "Impact explanation",
+      "Remediation quality",
+      "Context awareness",
+      "Developer usefulness"
+    ]
+  }
 }

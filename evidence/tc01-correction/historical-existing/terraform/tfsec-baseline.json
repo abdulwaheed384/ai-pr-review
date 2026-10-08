@@ -1,0 +1,74 @@
+{
+	"results": [
+		{
+			"rule_id": "AVD-AZU-0047",
+			"long_id": "azure-network-no-public-ingress",
+			"rule_description": "An inbound network security rule allows traffic from /0.",
+			"rule_provider": "azure",
+			"rule_service": "network",
+			"impact": "The port is exposed for ingress from the internet",
+			"resolution": "Set a more restrictive cidr range",
+			"links": [
+				"https://aquasecurity.github.io/tfsec/v1.28.14/checks/azure/network/no-public-ingress/",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule"
+			],
+			"description": "Security group rule allows ingress from public internet.",
+			"severity": "CRITICAL",
+			"warning": false,
+			"status": 0,
+			"resource": "azurerm_network_security_rule.allow_http",
+			"location": {
+				"filename": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+				"start_line": 29,
+				"end_line": 29
+			}
+		},
+		{
+			"rule_id": "AVD-AZU-0047",
+			"long_id": "azure-network-no-public-ingress",
+			"rule_description": "An inbound network security rule allows traffic from /0.",
+			"rule_provider": "azure",
+			"rule_service": "network",
+			"impact": "The port is exposed for ingress from the internet",
+			"resolution": "Set a more restrictive cidr range",
+			"links": [
+				"https://aquasecurity.github.io/tfsec/v1.28.14/checks/azure/network/no-public-ingress/",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule"
+			],
+			"description": "Security group rule allows ingress from public internet.",
+			"severity": "CRITICAL",
+			"warning": false,
+			"status": 0,
+			"resource": "azurerm_network_security_rule.allow_ssh",
+			"location": {
+				"filename": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+				"start_line": 15,
+				"end_line": 15
+			}
+		},
+		{
+			"rule_id": "AVD-AZU-0050",
+			"long_id": "azure-network-ssh-blocked-from-internet",
+			"rule_description": "SSH access should not be accessible from the Internet, should be blocked on port 22",
+			"rule_provider": "azure",
+			"rule_service": "network",
+			"impact": "Its dangerous to allow SSH access from the internet",
+			"resolution": "Block port 22 access from the internet",
+			"links": [
+				"https://aquasecurity.github.io/tfsec/v1.28.14/checks/azure/network/ssh-blocked-from-internet/",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/network_security_group#security_rule",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule#source_port_ranges"
+			],
+			"description": "Security group rule allows ingress to SSH port from multiple public internet addresses.",
+			"severity": "CRITICAL",
+			"warning": false,
+			"status": 0,
+			"resource": "azurerm_network_security_rule.allow_ssh",
+			"location": {
+				"filename": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+				"start_line": 15,
+				"end_line": 15
+			}
+		}
+	]
+}
