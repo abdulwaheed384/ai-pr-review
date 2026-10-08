@@ -1,0 +1,591 @@
+{
+    "check_type": "terraform",
+    "results": {
+        "passed_checks": [
+            {
+                "check_id": "CKV_AZURE_183",
+                "bc_check_id": null,
+                "check_name": "Ensure that VNET uses local DNS addresses",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        6,
+                        "resource \"azurerm_virtual_network\" \"vnet\" {\n"
+                    ],
+                    [
+                        7,
+                        "  name                = \"vnet-demo-ai\"\n"
+                    ],
+                    [
+                        8,
+                        "  address_space       = [\"10.0.0.0/16\"]\n"
+                    ],
+                    [
+                        9,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        10,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        11,
+                        "\n"
+                    ],
+                    [
+                        12,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/network.tf",
+                "file_abs_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                "repo_file_path": "/terraform/network.tf",
+                "file_line_range": [
+                    6,
+                    12
+                ],
+                "resource": "azurerm_virtual_network.vnet",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.VnetLocalDNS",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                "breadcrumbs": {
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_182",
+                "bc_check_id": null,
+                "check_name": "Ensure that VNET has at least 2 connected DNS Endpoints",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        6,
+                        "resource \"azurerm_virtual_network\" \"vnet\" {\n"
+                    ],
+                    [
+                        7,
+                        "  name                = \"vnet-demo-ai\"\n"
+                    ],
+                    [
+                        8,
+                        "  address_space       = [\"10.0.0.0/16\"]\n"
+                    ],
+                    [
+                        9,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        10,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        11,
+                        "\n"
+                    ],
+                    [
+                        12,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/network.tf",
+                "file_abs_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                "repo_file_path": "/terraform/network.tf",
+                "file_line_range": [
+                    6,
+                    12
+                ],
+                "resource": "azurerm_virtual_network.vnet",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.VnetSingleDNSServer",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                "breadcrumbs": {
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_77",
+                "bc_check_id": null,
+                "check_name": "Ensure that UDP Services are restricted from the Internet ",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    5
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleUDPAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_10",
+                "bc_check_id": null,
+                "check_name": "Ensure that SSH access is restricted from the internet",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    5
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleSSHAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_9",
+                "bc_check_id": null,
+                "check_name": "Ensure that RDP access is restricted from the internet",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    5
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleRDPAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_160",
+                "bc_check_id": null,
+                "check_name": "Ensure that HTTP (port 80) access is restricted from the internet",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    5
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleHTTPAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV2_AZURE_31",
+                "bc_check_id": null,
+                "check_name": "Ensure VNET subnet is configured with a Network Security Group (NSG)",
+                "check_result": {
+                    "result": "PASSED",
+                    "entity": {
+                        "azurerm_subnet": {
+                            "subnet": {
+                                "__end_line__": 19,
+                                "__start_line__": 14,
+                                "address_prefixes": [
+                                    [
+                                        "10.0.1.0/24"
+                                    ]
+                                ],
+                                "name": [
+                                    "subnet-demo"
+                                ],
+                                "resource_group_name": [
+                                    "rg-network-demo-ai"
+                                ],
+                                "virtual_network_name": [
+                                    "vnet-demo-ai"
+                                ],
+                                "__address__": "azurerm_subnet.subnet"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "delegation/service_delegation/name",
+                        "name",
+                        "resource_type"
+                    ]
+                },
+                "code_block": [
+                    [
+                        14,
+                        "resource \"azurerm_subnet\" \"subnet\" {\n"
+                    ],
+                    [
+                        15,
+                        "  name                 = \"subnet-demo\"\n"
+                    ],
+                    [
+                        16,
+                        "  resource_group_name  = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        17,
+                        "  virtual_network_name = azurerm_virtual_network.vnet.name\n"
+                    ],
+                    [
+                        18,
+                        "  address_prefixes     = [\"10.0.1.0/24\"]\n"
+                    ],
+                    [
+                        19,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/network.tf",
+                "file_abs_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                "repo_file_path": "/terraform/network.tf",
+                "file_line_range": [
+                    14,
+                    19
+                ],
+                "resource": "azurerm_subnet.subnet",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                "breadcrumbs": {
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "virtual_network_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_virtual_network.vnet",
+                            "path": "/Users/abwaheed/Documents/Repo/PROM06/ai-pr-review/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            }
+        ],
+        "failed_checks": [],
+        "skipped_checks": [],
+        "parsing_errors": []
+    },
+    "summary": {
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0,
+        "parsing_errors": 0,
+        "resource_count": 5,
+        "checkov_version": "3.3.1"
+    },
+    "url": "Add an api key '--bc-api-key <api-key>' to see more detailed insights via https://bridgecrew.cloud"
+}
