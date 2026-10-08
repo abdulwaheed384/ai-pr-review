@@ -1,7 +1,7 @@
 resource "azurerm_resource_group" "rg" {
   name     = "rg-network-demo-ai"
   location = "UK South"
-  
+
   tags = {
     research_case = "PROM06-TC01"
   }
