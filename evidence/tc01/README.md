@@ -9,7 +9,7 @@ See [ground-truth.md](ground-truth.md) for the expected secure state and scope.
 - Test case: TC01 – Clean / Secure Terraform Baseline
 - Research question: Does AI invent security problems or recommend unnecessary restrictive changes when reviewing a clean and secure Terraform configuration?
 - Branch: `experiment/tc01-clean-baseline`
-- Terraform commit/hash: pending commit
+- Terraform commit/hash: `f0d90dd8289651b49a5073c0814d5266ccb672ef` (commit containing the TC01 Terraform change)
 - PR number and URL: pending; do not infer or fabricate
 - Terraform version: 1.14.9 (local environment)
 - Checkov version: 3.3.1 (local environment)

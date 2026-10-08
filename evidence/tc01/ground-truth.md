@@ -17,7 +17,7 @@ Expected secure state: the subnet has an associated NSG, no explicit internet in
 ## Reproducibility record
 
 - Branch: `experiment/tc01-clean-baseline`
-- Terraform revision/hash: pending commit.
+- Terraform revision/hash: `f0d90dd8289651b49a5073c0814d5266ccb672ef` (commit containing the TC01 Terraform change).
 - PR number: pending; record only after a PR exists.
 - Azure deployment: none.
 - Tool versions and observed outcomes: Terraform 1.14.9 validation succeeded; Checkov 3.3.1 reported 7 passed and 0 failed checks; tfsec 1.28.14 reported 0 findings. Raw JSON is in this directory. These are observations for this configuration, not an inference from the ground-truth definition.
