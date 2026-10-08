@@ -42,7 +42,7 @@ The GitHub Actions reviewer is PR/diff based and should be invoked by the real P
 | AI structured output, verdict, score, and warnings | Pending PR/workflow |
 | AI PR comment | Pending PR/workflow |
 
-Local command timestamps: 2026-10-08 (system local time; exact invocation timestamps are in scanner JSON/logs where emitted). Checkov printed a network/DNS warning while fetching optional guideline mappings; it still exited successfully and produced the captured scan. Terraform initialization reused the locked AzureRM provider version 4.81.0; validation succeeded.
+Local command date: 2026-10-08. Checkov printed a network/DNS warning while fetching optional guideline mappings; it still exited successfully and produced the captured scan. Terraform initialization reused the locked AzureRM provider version 4.81.0; validation succeeded. A later repeat initially failed to start the cached provider, then succeeded after reinitialization; the final format and validate checks both succeeded.
 
 Record findings and anomalies as observed, including false positives. Do not alter scanner output or AI output. Research scoring remains a manual evaluation against the existing framework; no scores are assigned here.
 
