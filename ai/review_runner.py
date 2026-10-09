@@ -16,7 +16,7 @@ FINDING_CATEGORIES = {
 }
 SEVERITIES = {"INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"}
 FINDING_STATUSES = {"CONFIRMED", "NEEDS_CONTEXT", "INFORMATIONAL", "FALSE_POSITIVE"}
-CLASSIFICATION_POLICY_VERSION = "2.1"
+CLASSIFICATION_POLICY_VERSION = "2.2"
 MAX_SCANNER_FINDINGS = 25
 MAX_SCANNER_FIELD_CHARS = 300
 
@@ -357,6 +357,10 @@ def calculate_operational_score(review, scoring):
 
 
 def format_comment(review):
+    publishable = [
+        finding for finding in review["findings"]
+        if finding["status"] == "CONFIRMED"
+    ]
     score = review["operational_score"]
     condition = review["experiment_condition"]
     lines = [
@@ -367,15 +371,17 @@ def format_comment(review):
         "*This workflow score is separate from the PROM06 researcher evaluation rubric.*",
         "",
         "### Summary",
-        review["summary"],
+        (
+            f"The AI reviewer reported {len(publishable)} confirmed actionable finding(s)."
+            if publishable
+            else "The AI reviewer reported no confirmed actionable findings."
+        ),
         "",
         "### Findings",
     ]
-    if not review["findings"]:
+    if not publishable:
         lines.append("No confirmed actionable findings reported by the AI reviewer.")
-    for finding in review["findings"]:
-        if finding["status"] != "CONFIRMED":
-            continue
+    for finding in publishable:
         lines.extend([
             f"- **{finding['severity']} · {finding['category']} · {finding['title']}**",
             f"  - Category rationale: {finding['category_rationale']}",
@@ -384,23 +390,6 @@ def format_comment(review):
             f"  - Impact: {finding['impact']}",
             f"  - Recommendation: {finding['recommendation']}",
         ])
-    observations = [item for item in review["findings"] if item["status"] != "CONFIRMED"]
-    if observations:
-        lines.extend(["", "### Observations (not scored as confirmed defects)"])
-        labels = {
-            "NEEDS_CONTEXT": "Context required",
-            "INFORMATIONAL": "Informational",
-            "FALSE_POSITIVE": "Potential false positive",
-        }
-        for finding in observations:
-            lines.extend([
-                f"- **{labels[finding['status']]} · {finding['severity']} · {finding['title']}**",
-                f"  - Category: {finding['category']} — {finding['category_rationale']}",
-                f"  - Evidence: {finding['evidence']}",
-                f"  - Analysis: {finding['description']}",
-                f"  - Impact: {finding['impact']}",
-                f"  - Recommendation: {finding['recommendation']}",
-            ])
     if review["policy_violations"]:
         lines.extend(["", "### Policy mappings"])
         for policy in review["policy_violations"]:
@@ -408,10 +397,10 @@ def format_comment(review):
                 f"- **{policy['policy_id']}** — {policy['policy_name']} "
                 f"(finding {policy['finding_id']})"
             )
-    if review["positives"]:
-        lines.extend(["", "### Positives"])
-        lines.extend(f"- {positive}" for positive in review["positives"])
-    lines.extend(["", "### Recommendation", review["final_recommendation"]])
+    if publishable:
+        lines.extend(["", "### Recommendation", "Review and remediate the confirmed findings above."])
+    else:
+        lines.extend(["", "### Recommendation", "No confirmed actionable findings require remediation."])
     return "\n".join(lines) + "\n"
 
 

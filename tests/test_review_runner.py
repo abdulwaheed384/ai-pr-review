@@ -13,6 +13,7 @@ from ai.review_runner import (
     format_comment,
     parse_model_json,
     validate_review,
+    write_json,
 )
 
 
@@ -93,22 +94,90 @@ class ReviewRunnerTests(unittest.TestCase):
         self.assertEqual(review["findings"][0]["severity"], "MEDIUM")
         self.assertEqual(calculate_operational_score(review, self.scoring)[0], 100)
 
-    def test_documented_deny_all_note_is_not_rendered_as_an_actionable_finding(self):
+    def test_informational_outbound_deny_observation_is_excluded_from_pr_comment(self):
         review = validate_review(make_review([
             finding(
-                "Explicit deny duplicates defaults",
-                "azurerm_network_security_group.nsg has DenyAllInbound and DenyAllOutbound at priority 4096",
+                "DenyAllOutbound duplicates Azure's default deny",
+                "azurerm_network_security_group.nsg has DenyAllOutbound at priority 4096",
                 severity="INFORMATIONAL",
-                category="POTENTIAL_FALSE_POSITIVE",
-                status="FALSE_POSITIVE",
+                category="CONTEXT_DEPENDENT",
+                status="INFORMATIONAL",
+            )
+        ]))
+        review["summary"] = "DenyAllOutbound is redundant and the daily quota should be removed."
+        review["positives"] = ["The daily_quota_gb setting may cap ingestion."]
+        review["final_recommendation"] = "Review daily_quota_gb and DenyAllOutbound."
+        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "C"})
+        comment = format_comment(review)
+        self.assertNotIn("DenyAllOutbound", comment)
+        self.assertNotIn("Observations", comment)
+        self.assertIn("No confirmed actionable findings", comment)
+        self.assertEqual(len(review["findings"]), 1)
+        self.assertEqual(review["findings"][0]["status"], "INFORMATIONAL")
+        self.assertEqual(calculate_operational_score(review, self.scoring)[0], 100)
+
+    def test_informational_daily_quota_observation_is_excluded_from_pr_comment(self):
+        review = validate_review(make_review([
+            finding(
+                "Daily quota may limit logging",
+                "azurerm_log_analytics_workspace.network sets daily_quota_gb = 1; README documents this as a research cost limit",
+                severity="INFORMATIONAL",
+                category="CONTEXT_DEPENDENT",
+                status="INFORMATIONAL",
             )
         ]))
         review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "C"})
         comment = format_comment(review)
-        self.assertIn("### Observations (not scored as confirmed defects)", comment)
-        self.assertIn("Potential false positive", comment)
-        self.assertNotIn("- **INFORMATIONAL ·", comment)
-        self.assertEqual(calculate_operational_score(review, self.scoring)[0], 100)
+        self.assertNotIn("daily_quota_gb", comment)
+        self.assertNotIn("Daily quota", comment)
+        self.assertIn("No confirmed actionable findings", comment)
+
+    def test_non_actionable_observations_remain_in_machine_readable_audit(self):
+        review = validate_review(make_review([
+            finding(
+                "Outbound deny note",
+                "NSG DenyAllOutbound is intentional defense-in-depth",
+                severity="INFORMATIONAL",
+                category="CONTEXT_DEPENDENT",
+                status="INFORMATIONAL",
+                identifier="F-001",
+            ),
+            finding(
+                "Quota note",
+                "daily_quota_gb is documented as a research cost cap",
+                severity="LOW",
+                category="CONTEXT_DEPENDENT",
+                status="NEEDS_CONTEXT",
+                identifier="F-002",
+            ),
+        ]))
+        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "C"})
+        with tempfile.TemporaryDirectory() as temporary:
+            audit_path = Path(temporary) / "ai_output.json"
+            write_json(audit_path, review)
+            audit = json.loads(audit_path.read_text())
+        self.assertEqual([item["status"] for item in audit["findings"]], ["INFORMATIONAL", "NEEDS_CONTEXT"])
+        comment = format_comment(review)
+        self.assertNotIn("Outbound deny note", comment)
+        self.assertNotIn("Quota note", comment)
+        self.assertNotIn("DenyAllOutbound", comment)
+        self.assertNotIn("daily_quota_gb", comment)
+
+    def test_confirmed_low_high_and_critical_findings_are_published(self):
+        for severity in ("LOW", "HIGH", "CRITICAL"):
+            with self.subTest(severity=severity):
+                title = f"Confirmed {severity} issue"
+                review = validate_review(make_review([
+                    finding(title, "Terraform evidence demonstrates a current security weakness", severity=severity)
+                ]))
+                score, verdict, risk_level = calculate_operational_score(review, self.scoring)
+                review.update({
+                    "operational_score": score,
+                    "risk_level": risk_level,
+                    "verdict": verdict,
+                    "experiment_condition": "C",
+                })
+                self.assertIn(title, format_comment(review))
 
     def test_scanner_miss_does_not_suppress_evidence_supported_finding(self):
         # Scanner results are secondary evidence and never replace Terraform analysis.
