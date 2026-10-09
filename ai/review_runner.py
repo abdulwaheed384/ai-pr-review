@@ -7,9 +7,6 @@ import sys
 import time
 from pathlib import Path
 
-import requests
-
-
 ROOT = Path(__file__).resolve().parent.parent
 FINDING_CATEGORIES = {
     "SECURITY_VULNERABILITY",
@@ -62,6 +59,8 @@ def get_terraform_review_context():
 
 
 def call_ai(prompt):
+    import requests
+
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
