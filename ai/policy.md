@@ -10,10 +10,10 @@ Virtual Networks must NOT use public DNS servers. Use Azure DNS or internal DNS 
 All Virtual Networks must have DDoS Protection Standard enabled for production workloads.
 
 ## LOG-001
-All resources must have diagnostic logging enabled and forwarded to Log Analytics.
+Resources that expose Azure Monitor diagnostic categories must have the supported security-relevant logs enabled and forwarded to Log Analytics. A resource type with no diagnostic categories, and a subresource that cannot be targeted independently (such as a subnet), is not applicable; document that limitation. Do not create unrelated resources solely to manufacture diagnostic coverage.
 
 ## TAG-001
-All resources must include mandatory tags: environment, owner, cost-center.
+All taggable Azure resources must include mandatory tags: environment, owner, cost-center. Use documented research values where this is a research deployment; preserve the research_case identifier. Azure resources that do not support tags are not applicable.
 
 ## SEC-001
 No resource should be publicly exposed unless explicitly required and justified.

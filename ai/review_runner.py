@@ -24,8 +24,8 @@ def load_file(path):
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def get_changed_terraform_code():
-    """Return only changed .tf files under terraform/, preserving PR-diff scope."""
+def get_terraform_review_context():
+    """Return changed Terraform paths plus complete Terraform/policy context."""
     try:
         base_ref = os.environ.get("GITHUB_BASE_REF") or os.environ.get("BASE_REF", "main")
         subprocess.run(["git", "fetch", "origin", base_ref], cwd=ROOT, check=True)
@@ -37,7 +37,7 @@ def get_changed_terraform_code():
             check=True,
         )
 
-        parts = []
+        changed = []
         for relative_path in result.stdout.splitlines():
             path = Path(relative_path)
             if (
@@ -45,8 +45,18 @@ def get_changed_terraform_code():
                 and path.suffix == ".tf"
                 and (ROOT / path).is_file()
             ):
-                parts.append(f"\nFile: {path.as_posix()}\n{(ROOT / path).read_text(encoding='utf-8')}\n")
-        return "".join(parts).strip()
+                changed.append(path.as_posix())
+        if not changed:
+            return [], ""
+
+        parts = ["Changed Terraform files: " + ", ".join(sorted(changed))]
+        for path in sorted((ROOT / "terraform").glob("*.tf")):
+            label = "CHANGED FILE" if path.relative_to(ROOT).as_posix() in changed else "CONTEXT FILE"
+            parts.append(f"\n{label}: {path.relative_to(ROOT).as_posix()}\n{path.read_text(encoding='utf-8')}\n")
+        for relative_path in ("ai/policy.md", "README.md"):
+            path = ROOT / relative_path
+            parts.append(f"\nREVIEW CONTEXT: {relative_path}\n{path.read_text(encoding='utf-8')}\n")
+        return sorted(changed), "".join(parts).strip()
     except Exception as exc:
         raise RuntimeError(f"Could not collect changed Terraform files: {exc}") from exc
 
@@ -235,8 +245,8 @@ def main():
     if condition not in {"A", "B", "C"}:
         raise ValueError("EXPERIMENT_CONDITION must be A, B, or C")
 
-    terraform_code = get_changed_terraform_code()
-    if not terraform_code:
+    changed_files, terraform_context = get_terraform_review_context()
+    if not changed_files:
         write_json(results_dir / "ai_output.json", {
             "status": "skipped",
             "reason": "No changed Terraform .tf files in the PR diff.",
@@ -250,8 +260,8 @@ def main():
         )
         return
 
-    prompt = load_file("ai/prompt.txt") + "\n\nSecurity Policies:\n" + load_file("ai/policy.md")
-    full_prompt = prompt + "\n\nChanged Terraform Code (PR diff only):\n" + terraform_code
+    prompt = load_file("ai/prompt.txt")
+    full_prompt = prompt + "\n\nTerraform Changes and Full Repository Context:\n" + terraform_context
     raw_response = call_ai_with_retry(full_prompt)
     (results_dir / "ai_raw_response.txt").write_text(raw_response, encoding="utf-8")
     review = validate_review(parse_model_json(raw_response))

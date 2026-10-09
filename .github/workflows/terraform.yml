@@ -73,6 +73,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Run AI review regression tests
+        run: python -m unittest discover -s tests -v
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
