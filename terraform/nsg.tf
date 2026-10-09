@@ -39,6 +39,8 @@ resource "azurerm_log_analytics_workspace" "network" {
   retention_in_days            = 30
   daily_quota_gb               = 1
   local_authentication_enabled = false
+  internet_ingestion_enabled   = false
+  internet_query_enabled       = false
   tags                         = local.common_tags
 }
 
