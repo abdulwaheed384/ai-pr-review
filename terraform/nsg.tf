@@ -31,6 +31,7 @@ resource "azurerm_network_security_group" "nsg" {
 
 # NSG resource logs are the applicable diagnostic categories for this network-only
 # case. No VM, subnet-level diagnostic target, or public service exists in TC01.
+# TC01 requires diagnostic log collection, not interactive queries or alerting.
 resource "azurerm_log_analytics_workspace" "network" {
   name                         = "law-prom06-tc01-uks"
   location                     = azurerm_resource_group.rg.location
