@@ -8,3 +8,12 @@ terraform {
     }
   }
 }
+
+locals {
+  common_tags = {
+    environment   = "research"
+    owner         = "PROM06 Research Team"
+    cost-center   = "PROM06-RESEARCH"
+    research_case = "PROM06-TC01"
+  }
+}

@@ -1,11 +1,12 @@
 {
-  "model": "prom06-operational-pr-risk-v1",
+  "model": "prom06-operational-pr-risk-v2",
   "base_score": 100,
   "severity_penalties": {
     "critical": -30,
     "high": -30,
     "medium": -15,
-    "low": -5
+    "low": -5,
+    "informational": 0
   },
   "minimum_score": 0,
   "maximum_score": 100,
@@ -19,9 +20,11 @@
     "high": 50
   },
   "rules": [
-    "Start at base_score and apply the matching penalty once for each AI finding, regardless of its category.",
+    "Start at base_score and apply the matching penalty once for each CONFIRMED actionable finding, regardless of whether it is LOW severity.",
+    "NEEDS_CONTEXT, INFORMATIONAL, and FALSE_POSITIVE reports remain in the structured review and PR comment observations but do not reduce the score as confirmed defects.",
+    "Exact duplicate findings are counted once; removed duplicate IDs and the deduplication reason are recorded in processing_audit.",
     "Clamp the result to minimum_score and maximum_score.",
-    "An AI finding with CRITICAL severity sets risk_level to CRITICAL; otherwise risk_level is derived from risk_thresholds.",
+    "A CONFIRMED finding with CRITICAL severity sets risk_level to CRITICAL; otherwise risk_level is derived from risk_thresholds.",
     "At or above approve, verdict is APPROVE; at or above approve_with_comments, verdict is APPROVE_WITH_COMMENTS; below that, verdict is DO_NOT_MERGE."
   ],
   "research_rubric": {
