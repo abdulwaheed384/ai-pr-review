@@ -368,7 +368,7 @@ def format_comment(review):
         f"**Experiment condition:** {condition}",
         "**Automated operational score:** "
         f"{score}/100 — {review['risk_level']} — {review['verdict']}",
-        "*This workflow score is separate from the PROM06 researcher evaluation rubric.*",
+        "*This tool is for demonstration purposes only.*",
         "",
         "### Summary",
         (
