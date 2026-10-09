@@ -21,7 +21,7 @@
   },
   "rules": [
     "Start at base_score and apply the matching penalty once for each CONFIRMED actionable finding, regardless of whether it is LOW severity.",
-    "NEEDS_CONTEXT, INFORMATIONAL, and FALSE_POSITIVE reports remain in the structured review and PR comment observations but do not reduce the score as confirmed defects.",
+    "NEEDS_CONTEXT, INFORMATIONAL, and FALSE_POSITIVE reports remain in the structured review artifact only, not in the GitHub PR conversation comment, and do not reduce the score as confirmed defects.",
     "Exact duplicate findings are counted once; removed duplicate IDs and the deduplication reason are recorded in processing_audit.",
     "Clamp the result to minimum_score and maximum_score.",
     "A CONFIRMED finding with CRITICAL severity sets risk_level to CRITICAL; otherwise risk_level is derived from risk_thresholds.",
