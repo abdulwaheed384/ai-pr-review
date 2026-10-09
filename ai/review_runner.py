@@ -14,7 +14,11 @@ FINDING_CATEGORIES = {
     "CONTEXT_DEPENDENT",
     "POTENTIAL_FALSE_POSITIVE",
 }
-SEVERITIES = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
+SEVERITIES = {"INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"}
+FINDING_STATUSES = {"CONFIRMED", "NEEDS_CONTEXT", "INFORMATIONAL", "FALSE_POSITIVE"}
+CLASSIFICATION_POLICY_VERSION = "2.1"
+MAX_SCANNER_FINDINGS = 25
+MAX_SCANNER_FIELD_CHARS = 300
 
 
 def load_file(path):
@@ -56,6 +60,97 @@ def get_terraform_review_context():
         return sorted(changed), "".join(parts).strip()
     except Exception as exc:
         raise RuntimeError(f"Could not collect changed Terraform files: {exc}") from exc
+
+
+def _clip_scanner_value(value, limit=MAX_SCANNER_FIELD_CHARS):
+    if value is None:
+        return ""
+    return str(value).strip()[:limit]
+
+
+def build_scanner_context(results_dir):
+    """Load a bounded summary of scanner results for Condition C only."""
+    scanners = {}
+    for tool in ("checkov", "tfsec"):
+        json_path = results_dir / f"{tool}-results.json"
+        exit_path = results_dir / f"{tool}-exit-code.txt"
+        try:
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            exit_code = int(exit_path.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError, json.JSONDecodeError):
+            scanners[tool] = {"status": "UNAVAILABLE_OR_INVALID", "findings": []}
+            continue
+
+        findings = []
+        if tool == "checkov":
+            if isinstance(data, list):
+                data = data[0] if data else {}
+            checks = data.get("results", {}) if isinstance(data, dict) else {}
+            failed = checks.get("failed_checks") if isinstance(checks, dict) else None
+            if not isinstance(failed, list):
+                scanners[tool] = {"status": "UNAVAILABLE_OR_INVALID", "findings": []}
+                continue
+            for item in failed[:MAX_SCANNER_FINDINGS]:
+                if not isinstance(item, dict):
+                    continue
+                findings.append({
+                    "rule": _clip_scanner_value(item.get("check_id")),
+                    "description": _clip_scanner_value(item.get("check_name") or item.get("description")),
+                    "resource": _clip_scanner_value(item.get("resource")),
+                    "file": _clip_scanner_value(item.get("file_path")),
+                    "severity": _clip_scanner_value(item.get("severity")),
+                })
+        else:
+            if isinstance(data, dict):
+                findings_data = data.get("results", [])
+            else:
+                findings_data = data
+            if not isinstance(findings_data, list):
+                scanners[tool] = {"status": "UNAVAILABLE_OR_INVALID", "findings": []}
+                continue
+            for item in findings_data[:MAX_SCANNER_FINDINGS]:
+                if not isinstance(item, dict):
+                    continue
+                location = item.get("location") or {}
+                if not isinstance(location, dict):
+                    location = {}
+                findings.append({
+                    "rule": _clip_scanner_value(item.get("rule_id")),
+                    "description": _clip_scanner_value(item.get("description")),
+                    "resource": _clip_scanner_value(item.get("resource")),
+                    "file": _clip_scanner_value(location.get("filename")),
+                    "severity": _clip_scanner_value(item.get("severity")),
+                })
+
+        if findings:
+            status = "COMPLETED_WITH_FINDINGS"
+        elif exit_code == 0:
+            status = "COMPLETED_CLEAN"
+        else:
+            status = "EXECUTION_ERROR"
+        scanners[tool] = {
+            "status": status,
+            "exit_code": exit_code,
+            "findings": findings,
+            "truncated": max(
+                0,
+                len(failed if tool == "checkov" else findings_data) - MAX_SCANNER_FINDINGS,
+            ),
+        }
+    return scanners
+
+
+def assemble_review_prompt(prompt, terraform_context, condition, results_dir):
+    full_prompt = prompt + "\n\nTerraform Changes and Full Repository Context:\n" + terraform_context
+    scanner_context = None
+    if condition == "C":
+        scanner_context = build_scanner_context(results_dir)
+        full_prompt += (
+            "\n\nCondition C supporting scanner evidence (normalized from the separate raw artifacts; "
+            "this is evidence to assess, not authoritative ground truth):\n"
+            + json.dumps(scanner_context, indent=2, ensure_ascii=False)
+        )
+    return full_prompt, scanner_context
 
 
 def call_ai(prompt):
@@ -130,12 +225,36 @@ def validate_review(review):
             "id", "category", "category_rationale", "severity", "title",
             "description", "evidence", "impact", "recommendation",
         }
-        if not isinstance(finding, dict) or set(finding) != fields:
+        if not isinstance(finding, dict) or set(finding) not in (fields, fields | {"status"}):
             raise ValueError(f"Finding {index} does not match the required schema")
+        # Accept the prior schema during rolling upgrades; infer status without
+        # discarding or downgrading any finding from an older model response.
+        if "status" not in finding:
+            if finding["severity"] == "INFORMATIONAL":
+                finding["status"] = "INFORMATIONAL"
+            else:
+                finding["status"] = {
+                    "SECURITY_VULNERABILITY": "CONFIRMED",
+                    "POLICY_OR_COMPLIANCE": "CONFIRMED",
+                    "CONTEXT_DEPENDENT": "NEEDS_CONTEXT",
+                    "POTENTIAL_FALSE_POSITIVE": "FALSE_POSITIVE",
+                }.get(finding["category"])
         if finding["category"] not in FINDING_CATEGORIES:
             raise ValueError(f"Finding {index} has an invalid category")
         if finding["severity"] not in SEVERITIES:
             raise ValueError(f"Finding {index} has an invalid severity")
+        if finding["status"] not in FINDING_STATUSES:
+            raise ValueError(f"Finding {index} has an invalid status")
+        if finding["status"] == "CONFIRMED" and finding["category"] not in {
+            "SECURITY_VULNERABILITY", "POLICY_OR_COMPLIANCE"
+        }:
+            raise ValueError(f"Finding {index} cannot be confirmed under its category")
+        if finding["status"] == "NEEDS_CONTEXT" and finding["category"] != "CONTEXT_DEPENDENT":
+            raise ValueError(f"Finding {index} needs context but is not context-dependent")
+        if finding["status"] == "FALSE_POSITIVE" and finding["category"] != "POTENTIAL_FALSE_POSITIVE":
+            raise ValueError(f"Finding {index} is marked false-positive under another category")
+        if finding["severity"] == "INFORMATIONAL" and finding["status"] == "CONFIRMED":
+            raise ValueError(f"Finding {index} cannot be confirmed with INFORMATIONAL severity")
         for field in fields:
             if not isinstance(finding[field], str):
                 raise ValueError(f"Finding {index} field {field!r} must be a string")
@@ -158,17 +277,58 @@ def validate_review(review):
             or not isinstance(policy["policy_name"], str)
             or policy["finding_id"] not in finding_by_id
             or policy["severity"] != finding_by_id[policy["finding_id"]]["severity"]
+            or finding_by_id[policy["finding_id"]]["status"] != "CONFIRMED"
         ):
             raise ValueError(f"Policy mapping {index} must refer to a matching finding")
     return review
 
 
+def deduplicate_findings(review):
+    """Collapse exact repeated reports while recording every removed duplicate."""
+    retained = []
+    seen = {}
+    duplicates = []
+    duplicate_ids = {}
+    for finding in review["findings"]:
+        fingerprint = (
+            finding["category"],
+            finding["status"],
+            finding["severity"],
+            " ".join(finding["title"].casefold().split()),
+            " ".join(finding["evidence"].casefold().split()),
+        )
+        if fingerprint in seen:
+            duplicate_ids[finding["id"]] = seen[fingerprint]
+            duplicates.append({
+                "duplicate_id": finding["id"],
+                "retained_id": seen[fingerprint],
+                "reason": "Matching category, status, severity, normalized title, and evidence.",
+            })
+            continue
+        seen[fingerprint] = finding["id"]
+        retained.append(finding)
+    review["findings"] = retained
+    remapped_policies = []
+    seen_policies = set()
+    for policy in review["policy_violations"]:
+        policy["finding_id"] = duplicate_ids.get(policy["finding_id"], policy["finding_id"])
+        fingerprint = (
+            policy["finding_id"], policy["policy_id"], policy["policy_name"], policy["severity"]
+        )
+        if fingerprint not in seen_policies:
+            seen_policies.add(fingerprint)
+            remapped_policies.append(policy)
+    review["policy_violations"] = remapped_policies
+    return duplicates
+
+
 def calculate_operational_score(review, scoring):
-    """Apply the checked-in operational policy; the model never supplies score/verdict."""
+    """Score confirmed findings only; observations remain visible but unpenalized."""
     score = scoring["base_score"]
     penalties = scoring["severity_penalties"]
     for finding in review["findings"]:
-        score += penalties[finding["severity"].lower()]
+        if finding.get("status", "CONFIRMED") == "CONFIRMED":
+            score += penalties[finding["severity"].lower()]
     score = max(scoring.get("minimum_score", 0), min(scoring.get("maximum_score", 100), score))
 
     approve_at = scoring["verdict_thresholds"]["approve"]
@@ -180,7 +340,10 @@ def calculate_operational_score(review, scoring):
     else:
         verdict = "DO_NOT_MERGE"
 
-    if any(item["severity"] == "CRITICAL" for item in review["findings"]):
+    if any(
+        item["severity"] == "CRITICAL" and item.get("status", "CONFIRMED") == "CONFIRMED"
+        for item in review["findings"]
+    ):
         risk_level = "CRITICAL"
     elif score >= scoring["risk_thresholds"]["low"]:
         risk_level = "LOW"
@@ -209,8 +372,10 @@ def format_comment(review):
         "### Findings",
     ]
     if not review["findings"]:
-        lines.append("No findings reported by the AI reviewer.")
+        lines.append("No confirmed actionable findings reported by the AI reviewer.")
     for finding in review["findings"]:
+        if finding["status"] != "CONFIRMED":
+            continue
         lines.extend([
             f"- **{finding['severity']} · {finding['category']} · {finding['title']}**",
             f"  - Category rationale: {finding['category_rationale']}",
@@ -219,6 +384,23 @@ def format_comment(review):
             f"  - Impact: {finding['impact']}",
             f"  - Recommendation: {finding['recommendation']}",
         ])
+    observations = [item for item in review["findings"] if item["status"] != "CONFIRMED"]
+    if observations:
+        lines.extend(["", "### Observations (not scored as confirmed defects)"])
+        labels = {
+            "NEEDS_CONTEXT": "Context required",
+            "INFORMATIONAL": "Informational",
+            "FALSE_POSITIVE": "Potential false positive",
+        }
+        for finding in observations:
+            lines.extend([
+                f"- **{labels[finding['status']]} · {finding['severity']} · {finding['title']}**",
+                f"  - Category: {finding['category']} — {finding['category_rationale']}",
+                f"  - Evidence: {finding['evidence']}",
+                f"  - Analysis: {finding['description']}",
+                f"  - Impact: {finding['impact']}",
+                f"  - Recommendation: {finding['recommendation']}",
+            ])
     if review["policy_violations"]:
         lines.extend(["", "### Policy mappings"])
         for policy in review["policy_violations"]:
@@ -260,10 +442,13 @@ def main():
         return
 
     prompt = load_file("ai/prompt.txt")
-    full_prompt = prompt + "\n\nTerraform Changes and Full Repository Context:\n" + terraform_context
+    full_prompt, scanner_context = assemble_review_prompt(
+        prompt, terraform_context, condition, results_dir
+    )
     raw_response = call_ai_with_retry(full_prompt)
     (results_dir / "ai_raw_response.txt").write_text(raw_response, encoding="utf-8")
     review = validate_review(parse_model_json(raw_response))
+    duplicates = deduplicate_findings(review)
     scoring = json.loads(load_file("ai/scoring.json"))
     score, verdict, risk_level = calculate_operational_score(review, scoring)
     review.update({
@@ -272,6 +457,9 @@ def main():
         "risk_level": risk_level,
         "experiment_condition": condition,
         "scoring_config": "ai/scoring.json",
+        "classification_policy_version": CLASSIFICATION_POLICY_VERSION,
+        "scanner_context": scanner_context,
+        "processing_audit": {"deduplicated_findings": duplicates},
     })
     write_json(results_dir / "ai_output.json", review)
     (results_dir / "pr_comment_ai.md").write_text(format_comment(review), encoding="utf-8")
