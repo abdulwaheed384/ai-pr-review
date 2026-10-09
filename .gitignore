@@ -1,0 +1,13 @@
+# Python bytecode
+**/__pycache__/
+*.py[cod]
+
+# Terraform working directory and provider cache
+**/.terraform/
+
+# Generated local scanner output
+/evidence/checkov-baseline.json
+/evidence/tfsec-baseline.json
+/terraform/checkov-baseline.json
+/terraform/tfsec-baseline.json
+/pr_comment.txt
