@@ -23,3 +23,8 @@ resource "azurerm_subnet" "subnet" {
   default_outbound_access_enabled = false
   # Subnets do not support Azure resource tags; the parent VNet and NSG are tagged.
 }
+
+resource "azurerm_subnet_network_security_group_association" "subnet" {
+  subnet_id                 = azurerm_subnet.subnet.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
