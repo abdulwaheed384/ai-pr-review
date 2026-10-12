@@ -1,11 +1,26 @@
+
 resource "azurerm_network_security_group" "nsg" {
   name                = "nsg-demo-ai"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   tags                = local.common_tags
 
-  # Priority 4096 runs before Azure's default allow rules (65000/65001) and
-  # default deny (65500), preserving an explicit deny-all baseline.
+  # TC03: Deliberately unrestricted RDP access.
+  # This insecure rule is for controlled security testing only.
+  security_rule {
+    name                       = "AllowRDP"
+    priority                   = 301
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "3389"
+    source_address_prefix      = "0.0.0.0/0"
+    destination_address_prefix = "*"
+  }
+
+  # Priority 4096 preserves the explicit deny-all baseline.
+  # The AllowRDP rule takes precedence because its priority is lower.
   security_rule {
     name                       = "DenyAllInbound"
     priority                   = 4096
