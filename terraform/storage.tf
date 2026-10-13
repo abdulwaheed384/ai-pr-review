@@ -5,7 +5,7 @@ resource "azurerm_storage_account" "tc07_storage" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
-  min_tls_version = "TLS1_0"
+  min_tls_version = "TLS1_2"
 
   tags = {
     Environment = "Research"
