@@ -36,7 +36,7 @@ I declare the following:
 
 (1) that the material contained in this dissertation is the end result of my own work and that due acknowledgement has been given in the bibliography and references to ALL sources be they printed, electronic or personal.
 
-(2) the Word Count of this Dissertation is 10,343
+(2) the Word Count of this Dissertation is 10,426
 
 (3) that unless this dissertation has been confirmed as confidential, I agree to an entire electronic copy or sections of the dissertation to being placed on the eLearning Portal, if deemed appropriate, to allow future students the opportunity to see examples of past dissertations. I understand that if displayed on the eLearning Portal it would be made available for no longer than five years and that students would be able to print off copies or download.
 
@@ -56,7 +56,7 @@ DATE: ..............................................
 
 # Abstract {.unnumbered}
 
-Infrastructure-as-Code lets cloud misconfigurations be caught at pull-request review, but the rule-based scanners used for this detect only what their rules describe and explain little. This study evaluated whether an AI reviewer based on a large language model improves Terraform security review when compared with Checkov and tfsec. A GitHub Actions pipeline ran all three tools on fifteen controlled test cases with ground truth fixed in advance. Evidence verification showed that early AI results had been influenced by scanner output. The workflow was therefore corrected, and every case was rerun with the AI working independently, three times per case. The AI detected 11 of 12 vulnerable cases, and a twelfth partially, against 5 for Checkov, 4 for tfsec and 8 for both scanners combined. It found every condition the scanners found, plus context-dependent and secret-related weaknesses they missed. Its errors, however, differed in kind: findings were classified inconsistently between identical runs, a third of runs on acceptable configurations raised findings, and 7 of 45 confirmed findings were false. Applying its recommended fixes resolved all twelve targets, but one recommendation for a false finding produced invalid Terraform. The study also found that comments in the code changed the AI's verdicts. The results support using AI review as an advisory layer alongside deterministic scanners, not as a replacement or merge gate. They are limited by the small constructed sample, a single model and single-rater scoring.
+Infrastructure-as-Code lets cloud misconfigurations be caught at pull-request review, but the rule-based scanners used for this detect only what their rules describe and explain little. This study evaluated whether an AI reviewer based on a large language model improves Terraform security review when compared with Checkov and tfsec. A GitHub Actions pipeline ran all three tools on fifteen controlled test cases with ground truth fixed in advance. Evidence verification showed that early AI results had been influenced by scanner output. The workflow was therefore corrected, and every case was rerun with the AI working independently, three times per case. Of the twelve vulnerable cases among the fifteen, the AI detected 11 and a twelfth partially, against 5 for Checkov, 4 for tfsec and 8 for both scanners combined. It found every condition the scanners found, plus context-dependent and secret-related weaknesses they missed. Its errors, however, differed in kind: findings were classified inconsistently between identical runs, a third of runs on acceptable configurations raised findings, and 7 of 45 confirmed findings were classified as false, although three of these reflected weaknesses in the test fixtures. Applying its recommended fixes resolved all twelve targets, but one recommendation for a false finding produced invalid Terraform. The study also found that comments in the code changed the AI's verdicts. The results support using AI review as an advisory layer alongside deterministic scanners, not as a replacement or merge gate. They are limited by the small constructed sample, a single model and single-rater scoring.
 
 ```{=openxml}
 <w:p><w:r><w:br w:type="page"/></w:r></w:p>
@@ -545,7 +545,7 @@ Figure 4.1 summarises the case-level outcome for every tool.
 
 ## 4.2 Results from Traditional Scanning (Checkov and tfsec)
 
-Both scanners produced identical output in every repeated run, and their results matched a local reproduction with the same versions. Checkov detected 5 of the 12 vulnerable cases (TC05, TC06, TC07, TC10, TC11), and tfsec detected 4 (TC02, TC03, TC04, TC07). Together they detected 8. Only TC07, the weak TLS setting, was found by both. Their coverage was therefore almost entirely complementary, not overlapping.
+Both scanners produced identical output in every repeated run, and their results matched a local reproduction with the same versions. Checkov detected 5 of the 12 vulnerable cases in TC01–TC15 (TC05, TC06, TC07, TC10, TC11), and tfsec detected 4 (TC02, TC03, TC04, TC07). Together they detected 8. Only TC07, the weak TLS setting, was found by both. Their coverage was therefore almost entirely complementary, not overlapping.
 
 ### Checkov's misses on public network rules
 
@@ -584,7 +584,7 @@ Checkov produced the most noise on TC07. Ten failed checks unrelated to TLS appe
 
 ### Detection
 
-Independently of the scanners, the AI reviewer confirmed the target condition in all runs of 11 of the 12 vulnerable cases. Across vulnerable-case runs, it confirmed the target in 34 of 37.
+Independently of the scanners, the AI reviewer confirmed the target condition in all runs of 11 of the 12 vulnerable cases in TC01–TC15. Across vulnerable-case runs, it confirmed the target in 34 of 37.
 
 The exception was TC08. In all four runs the AI identified the missing NSG diagnostic setting, explained why it mattered and recommended the correct resource. It classified the finding differently each time:
 
@@ -650,7 +650,7 @@ The severities were higher than in the independent runs: CRITICAL rather than HI
 
 ### Decision-level combination
 
-The second form is a combination of the independent outputs, reporting a condition when either the scanners or the AI do. It detected 11 of the 12 vulnerable cases. Only TC08 was missed, and only if PARTIAL is counted as a miss.
+The second form is a combination of the independent outputs, reporting a condition when either the scanners or the AI do. It detected 11 of the 12 vulnerable cases in TC01–TC15. Only TC08 was missed, and only if PARTIAL is counted as a miss.
 
 No condition was found by a scanner and missed by the AI. Within this set, the AI therefore covered everything the scanners covered plus three cases they did not.
 
@@ -658,7 +658,7 @@ The combination also inherits both sources of false alarm. These are tfsec's ale
 
 ## 4.5 Comparative Analysis Across TC01–TC15
 
-Figure 4.4 compares detection rates. On the twelve verified original cases the scanners together reached 80% and the AI 90%. On all fifteen cases the scanners together reached 67% and the AI 92% (100% if PARTIAL counts).
+Figure 4.4 compares detection rates. On the original TC01–TC12 set (ten vulnerable cases) the scanners together reached 80% and the AI 90%. On all fifteen cases the scanners together reached 67% and the AI 92% (100% if PARTIAL counts).
 
 The gap widened when the three later cases were added, because all three targeted conditions without a scanner rule. This illustrates how strongly such comparisons depend on case selection. The AI's apparent advantage is concentrated in conditions that are contextual (TC13), semantic (TC15) or outside the scanners' rule sets (TC08, TC09). Neither the scanners nor the AI is uniformly stronger: tfsec found the public network rules that Checkov missed, and Checkov found the association, DNS and role conditions that tfsec has no rules for.
 
@@ -927,18 +927,20 @@ This study asked whether AI-assisted security review can improve the effectivene
 
 **Detection accuracy.**
 
-| Reviewer | Vulnerable cases detected (of 12) |
+| Reviewer | Vulnerable cases detected (12 vulnerable cases in TC01–TC15) |
 |---|---|
 | AI reviewer, working independently | 11, plus 1 partially |
 | Checkov | 5 |
 | tfsec | 4 |
 | Checkov and tfsec together | 8 |
 
+On the original twelve-case set (TC01–TC12, ten vulnerable cases), the AI detected 9 plus 1 partially and the scanners together 8.
+
 Every condition the scanners found, the AI also found. Its extra detections were conditions requiring context or semantic judgement (an over-privileged built-in role judged against a documented requirement; hard-coded secrets) or conditions outside the scanners' rule sets. The scanners' failures were stable gaps in rule coverage. The AI's were of a different kind:
 
 - it classified the same finding differently across runs;
 - it raised findings against acceptable configurations in a third of runs on those cases;
-- seven of its 45 confirmed findings were false.
+- seven of its 45 confirmed findings were classified as false, giving a precision of 82%. Three of these accurately described a weakness in the test fixtures, and treating them as valid raises precision to 89%.
 
 **Remediation quality.** The AI's advice was usually specific and correct. Applied as written, all twelve fixes for the vulnerable cases it detected reached the secure state. Its explanations were the weakest element. They mapped findings to inapplicable policies, stated false platform facts, and in one case recommended a change that made the Terraform invalid.
 
@@ -954,7 +956,7 @@ Every condition the scanners found, the AI also found. Its extra detections were
 
 The AI added comparatively little time to the pipeline, a median of 31.5 seconds.
 
-These conclusions hold for one model, one prompt and a constructed sample, and the evidence does not support a general claim that AI review outperforms rule-based scanning. It supports a narrower claim: on this sample, an AI reviewer used alongside deterministic scanners covered conditions the scanners missed. Its errors were of a different kind from theirs and less predictable.
+These conclusions, including the precision figures, hold for one model, one prompt and a constructed sample. They are not measures of real-world performance, and the evidence does not support a general claim that AI review outperforms rule-based scanning. It supports a narrower claim: on this sample, an AI reviewer used alongside deterministic scanners covered conditions the scanners missed. Its errors were of a different kind from theirs and less predictable.
 
 ## 6.2 Practical Recommendations
 
@@ -1033,7 +1035,7 @@ Kim, G., Humble, J., Debois, P. and Willis, J. (2021) *The DevOps Handbook*. 2nd
 
 Li, H., Hao, Y., Zhai, Y. and Qian, Z. (2024) 'Enhancing static analysis for practical bug detection: An LLM-integrated approach', *Proceedings of the ACM on Programming Languages*, 8(OOPSLA1), Article 111.
 
-McIntosh, S., Kamei, Y., Adams, B. and Hassan, A.E. (2016) 'An empirical study of the impact of modern code review practices on software quality', *Empirical Software Engineering*, 21(5), pp. 2146–2189..
+McIntosh, S., Kamei, Y., Adams, B. and Hassan, A.E. (2016) 'An empirical study of the impact of modern code review practices on software quality', *Empirical Software Engineering*, 21(5), pp. 2146–2189.
 
 Microsoft (2024) *Shared responsibility in the cloud*. Available at: https://learn.microsoft.com/azure/security/fundamentals/shared-responsibility (Accessed: 23 July 2026).
 

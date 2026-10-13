@@ -185,7 +185,7 @@ Kim, G., Humble, J., Debois, P. and Willis, J. (2021) *The DevOps Handbook*. 2nd
 
 Li, H., Hao, Y., Zhai, Y. and Qian, Z. (2024) 'Enhancing static analysis for practical bug detection: An LLM-integrated approach', *Proceedings of the ACM on Programming Languages*, 8(OOPSLA1), Article 111.
 
-McIntosh, S., Kamei, Y., Adams, B. and Hassan, A.E. (2016) 'An empirical study of the impact of modern code review practices on software quality', *Empirical Software Engineering*, 21(5), pp. 2146–2189..
+McIntosh, S., Kamei, Y., Adams, B. and Hassan, A.E. (2016) 'An empirical study of the impact of modern code review practices on software quality', *Empirical Software Engineering*, 21(5), pp. 2146–2189.
 
 Microsoft (2024) *Shared responsibility in the cloud*. Available at: https://learn.microsoft.com/azure/security/fundamentals/shared-responsibility (Accessed: 23 July 2026).
 

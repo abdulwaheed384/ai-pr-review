@@ -6,18 +6,20 @@ This study asked whether AI-assisted security review can improve the effectivene
 
 **Detection accuracy.**
 
-| Reviewer | Vulnerable cases detected (of 12) |
+| Reviewer | Vulnerable cases detected (12 vulnerable cases in TC01–TC15) |
 |---|---|
 | AI reviewer, working independently | 11, plus 1 partially |
 | Checkov | 5 |
 | tfsec | 4 |
 | Checkov and tfsec together | 8 |
 
+On the original twelve-case set (TC01–TC12, ten vulnerable cases), the AI detected 9 plus 1 partially and the scanners together 8.
+
 Every condition the scanners found, the AI also found. Its extra detections were conditions requiring context or semantic judgement (an over-privileged built-in role judged against a documented requirement; hard-coded secrets) or conditions outside the scanners' rule sets. The scanners' failures were stable gaps in rule coverage. The AI's were of a different kind:
 
 - it classified the same finding differently across runs;
 - it raised findings against acceptable configurations in a third of runs on those cases;
-- seven of its 45 confirmed findings were false.
+- seven of its 45 confirmed findings were classified as false, giving a precision of 82%. Three of these accurately described a weakness in the test fixtures, and treating them as valid raises precision to 89%.
 
 **Remediation quality.** The AI's advice was usually specific and correct. Applied as written, all twelve fixes for the vulnerable cases it detected reached the secure state. Its explanations were the weakest element. They mapped findings to inapplicable policies, stated false platform facts, and in one case recommended a change that made the Terraform invalid.
 
@@ -33,7 +35,7 @@ Every condition the scanners found, the AI also found. Its extra detections were
 
 The AI added comparatively little time to the pipeline, a median of 31.5 seconds.
 
-These conclusions hold for one model, one prompt and a constructed sample, and the evidence does not support a general claim that AI review outperforms rule-based scanning. It supports a narrower claim: on this sample, an AI reviewer used alongside deterministic scanners covered conditions the scanners missed. Its errors were of a different kind from theirs and less predictable.
+These conclusions, including the precision figures, hold for one model, one prompt and a constructed sample. They are not measures of real-world performance, and the evidence does not support a general claim that AI review outperforms rule-based scanning. It supports a narrower claim: on this sample, an AI reviewer used alongside deterministic scanners covered conditions the scanners missed. Its errors were of a different kind from theirs and less predictable.
 
 ## 6.2 Practical Recommendations
 

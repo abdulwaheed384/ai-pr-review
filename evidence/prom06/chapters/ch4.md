@@ -12,7 +12,7 @@ Figure 4.1 summarises the case-level outcome for every tool.
 
 ## 4.2 Results from Traditional Scanning (Checkov and tfsec)
 
-Both scanners produced identical output in every repeated run, and their results matched a local reproduction with the same versions. Checkov detected 5 of the 12 vulnerable cases (TC05, TC06, TC07, TC10, TC11), and tfsec detected 4 (TC02, TC03, TC04, TC07). Together they detected 8. Only TC07, the weak TLS setting, was found by both. Their coverage was therefore almost entirely complementary, not overlapping.
+Both scanners produced identical output in every repeated run, and their results matched a local reproduction with the same versions. Checkov detected 5 of the 12 vulnerable cases in TC01–TC15 (TC05, TC06, TC07, TC10, TC11), and tfsec detected 4 (TC02, TC03, TC04, TC07). Together they detected 8. Only TC07, the weak TLS setting, was found by both. Their coverage was therefore almost entirely complementary, not overlapping.
 
 ### Checkov's misses on public network rules
 
@@ -51,7 +51,7 @@ Checkov produced the most noise on TC07. Ten failed checks unrelated to TLS appe
 
 ### Detection
 
-Independently of the scanners, the AI reviewer confirmed the target condition in all runs of 11 of the 12 vulnerable cases. Across vulnerable-case runs, it confirmed the target in 34 of 37.
+Independently of the scanners, the AI reviewer confirmed the target condition in all runs of 11 of the 12 vulnerable cases in TC01–TC15. Across vulnerable-case runs, it confirmed the target in 34 of 37.
 
 The exception was TC08. In all four runs the AI identified the missing NSG diagnostic setting, explained why it mattered and recommended the correct resource. It classified the finding differently each time:
 
@@ -117,7 +117,7 @@ The severities were higher than in the independent runs: CRITICAL rather than HI
 
 ### Decision-level combination
 
-The second form is a combination of the independent outputs, reporting a condition when either the scanners or the AI do. It detected 11 of the 12 vulnerable cases. Only TC08 was missed, and only if PARTIAL is counted as a miss.
+The second form is a combination of the independent outputs, reporting a condition when either the scanners or the AI do. It detected 11 of the 12 vulnerable cases in TC01–TC15. Only TC08 was missed, and only if PARTIAL is counted as a miss.
 
 No condition was found by a scanner and missed by the AI. Within this set, the AI therefore covered everything the scanners covered plus three cases they did not.
 
@@ -125,7 +125,7 @@ The combination also inherits both sources of false alarm. These are tfsec's ale
 
 ## 4.5 Comparative Analysis Across TC01–TC15
 
-Figure 4.4 compares detection rates. On the twelve verified original cases the scanners together reached 80% and the AI 90%. On all fifteen cases the scanners together reached 67% and the AI 92% (100% if PARTIAL counts).
+Figure 4.4 compares detection rates. On the original TC01–TC12 set (ten vulnerable cases) the scanners together reached 80% and the AI 90%. On all fifteen cases the scanners together reached 67% and the AI 92% (100% if PARTIAL counts).
 
 The gap widened when the three later cases were added, because all three targeted conditions without a scanner rule. This illustrates how strongly such comparisons depend on case selection. The AI's apparent advantage is concentrated in conditions that are contextual (TC13), semantic (TC15) or outside the scanners' rule sets (TC08, TC09). Neither the scanners nor the AI is uniformly stronger: tfsec found the public network rules that Checkov missed, and Checkov found the association, DNS and role conditions that tfsec has no rules for.
 
