@@ -169,7 +169,7 @@ Table 3.4: Operational scoring rules (summary)
 | Context | Correct cross-resource reasoning | Incomplete | Ignores relevant context |
 | Usefulness | Actionable comment with no noise | Extra false or duplicate confirmed findings | Misleading, target hidden, or legitimate change blocked |
 
-Initial scores for all 46 runs were produced by an AI research assistant applying these rules. To check scorer bias, the researcher independently scored a stratified sample of ten runs without sight of the initial scores, and agreement is reported in Chapter 4.
+Scores for all 46 runs were produced by an AI research assistant applying these rules, with every score and its written justification recorded alongside the evidence (Appendix E). No second independent rater was used, so the scores reflect a single rubric application. Chapter 5 treats this as a limitation.
 
 Remediation effectiveness, the master plan's demonstrated correction rate, was tested directly. For each case the AI detected, the recommendation from the first run that confirmed the target was applied to the unchanged fixture on a new branch, with no other edits. Where the AI gave only a placeholder source range, the documentation address 203.0.113.10/32 was used. Each remediation branch was opened as a pull request so that validation, both scanners and a fresh AI review ran on it. Two further variants isolated specific effects:
 
@@ -206,9 +206,9 @@ Scanner results were identical across repeated runs and matched the local reprod
 
 The study involved no human participants and no personal data. All infrastructure was synthetic. Secrets were dummy values created for the purpose, and addresses came from the RFC 5737 documentation range (Arkko, Cotton and Vegoda, 2010). No test case was merged or deployed, so no vulnerable resource was ever exposed. Only synthetic Terraform was sent to the external AI service.
 
-[AB to confirm: ethics approval status or reference under the University's research ethics policy, and the declaration of generative-AI assistance required by the module guidance.]
+Formal ethics approval was not required, because the study involved no human participants and no personal data. In line with the module's guidance on artificial intelligence, generative AI was used in two ways. It was the object of study, and it also acted as a research assistant for evidence verification, scoring and drafting. All AI-assisted outputs were checked against the primary evidence before use.
 
-Because an AI assistant also supported scoring and analysis, the researcher's independent scoring and the evidence register serve as the checks on that assistance.
+The evidence register and the archived raw outputs allow every reported figure to be checked independently of that assistance.
 
 ## References cited in this chapter
 

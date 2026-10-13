@@ -44,7 +44,7 @@ notes=[
  "Each run is scored separately (3 runs per case; 4 for TC08 because one PR run failed validation and a fourth dispatch was made).",
  "Only the AI output of the INDEPENDENT condition is scored (scanner_findings_supplied_to_ai = false). Hybrid (Condition C) outputs are not scored here.",
  "Policy mis-mapping is penalised under E only (not U) to avoid double counting; it is also flagged separately in column O of 'AI Quality Scoring' so analysis can exclude it.",
- "Disclosure / validity threat: the scorer is an AI assistant that read all outputs before writing these rules. To mitigate, AB should independently score the stratified sample on 'Inter-rater Check' before results are reported; agreement is calculated there.",
+ "Disclosure / validity threat: the scorer is an AI assistant that read all outputs before writing these rules. No independent second rater was used (AB decided on 13 Oct not to score the sample); scores are a single rubric application with a written justification per score, reported as a limitation.",
  "TC13–TC15 (added 13 Oct 2026) were scored from their ai_output.json artefacts after AB downloaded them (13 Oct, 15:50), using the same rules.",
 ]
 r0=6+len(rules)+1

@@ -161,7 +161,7 @@ Conditional statements that secrets in configuration may reach state were not pe
 
 Remediation was usually specific and correct. The main gap was TC04, where all three runs restricted the source address but never mentioned that HTTP is unencrypted or proposed HTTPS.
 
-[Inter-rater agreement: to be completed when AB's blind scores for the ten sampled runs are available.]
+These scores come from a single application of the rubric by an AI assistant, so they have no independent reliability check. Their value lies in the recorded justification for each score, which can be audited against the evidence, more than in the averages themselves.
 
 ### Remediation validation
 

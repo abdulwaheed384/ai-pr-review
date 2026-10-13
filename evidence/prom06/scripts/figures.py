@@ -110,7 +110,7 @@ for y_, v in zip(yy, vals):
     ax.text(v + 0.03, y_, f"{v:.2f}", va="center", fontsize=8.5, color=INK)
 ax.set_yticks(yy, dims); ax.set_xlim(0, 2.2); ax.set_xticks([0, 0.5, 1, 1.5, 2])
 ax.set_xlabel("Mean score (0–2), 37 independent runs on vulnerable cases (TC02–TC11, TC13, TC15)"); clean(ax, "x")
-ax.text(0, -0.36, "Scored by the AI research assistant against predefined operational rules; inter-rater check by the researcher pending.",
+ax.text(0, -0.36, "Single rubric application by the AI research assistant against predefined dimensions; no independent second rater.",
         transform=ax.transAxes, fontsize=7.5, color=INK2)
 save(fig, "fig_ai_quality")
 
