@@ -4,6 +4,19 @@ resource "azurerm_network_security_group" "nsg" {
   resource_group_name = azurerm_resource_group.rg.name
   tags                = local.common_tags
 
+  # Administrative SSH from the approved bastion address.
+  security_rule {
+    name                       = "AllowSSHFromBastion"
+    priority                   = 300
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "203.0.113.10/32"
+    destination_address_prefix = "*"
+  }
+
   # Priority 4096 runs before Azure's default allow rules (65000/65001) and
   # default deny (65500), preserving an explicit deny-all baseline.
   security_rule {
