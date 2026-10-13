@@ -11,6 +11,8 @@ resource "azurerm_role_definition" "tc10_excessive_permissions" {
     not_actions = []
   }
 
+  tags = local.common_tags
+
   assignable_scopes = [
     data.azurerm_subscription.current.id
   ]
