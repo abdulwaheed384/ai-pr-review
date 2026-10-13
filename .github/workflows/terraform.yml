@@ -11,15 +11,6 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      experiment_condition:
-        description: Experimental condition (A, B, or C)
-        required: true
-        type: choice
-        options:
-          - A
-          - B
-          - C
-        default: C
       pr_number:
         description: PR number to receive separate tool comments (optional)
         required: false
@@ -31,7 +22,7 @@ on:
         default: main
 
 env:
-  EXPERIMENT_CONDITION: ${{ github.event.inputs.experiment_condition || 'C' }}
+  EXPERIMENT_CONDITION: INDEPENDENT
   PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number || '' }}
   EXPERIMENT_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
   BASE_REF: ${{ github.base_ref || github.event.inputs.base_ref || 'main' }}
@@ -63,7 +54,8 @@ jobs:
               "event_name": os.environ["GITHUB_EVENT_NAME"],
               "started_at_utc": datetime.now(timezone.utc).isoformat(),
               "classification_policy_version": CLASSIFICATION_POLICY_VERSION,
-              "scanner_context_expected": os.environ["EXPERIMENT_CONDITION"] == "C",
+              "review_mode": "INDEPENDENT",
+              "scanner_findings_supplied_to_ai": False,
           }
           Path("run-results/experiment-metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
@@ -92,12 +84,10 @@ jobs:
         run: terraform -chdir=terraform validate
 
       - name: Install Checkov 3.3.1
-        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
         run: python -m pip install checkov==3.3.1
 
       - name: Run Checkov
         id: checkov
-        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
         shell: bash
         run: |
           set +e
@@ -109,7 +99,6 @@ jobs:
           checkov --version > run-results/checkov-version.txt 2>&1
 
       - name: Render Checkov PR report
-        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
         run: |
           python ai/render_scanner_report.py \
             --tool checkov \
@@ -120,7 +109,6 @@ jobs:
             --output run-results/pr_comment_checkov.md
 
       - name: Install tfsec 1.28.14
-        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
         run: |
           curl --fail --location --silent --show-error \
             https://github.com/aquasecurity/tfsec/releases/download/v1.28.14/tfsec-linux-amd64 \
@@ -129,7 +117,6 @@ jobs:
 
       - name: Run tfsec
         id: tfsec
-        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
         shell: bash
         run: |
           set +e
@@ -141,7 +128,6 @@ jobs:
           tfsec --version > run-results/tfsec-version.txt 2>&1
 
       - name: Render tfsec PR report
-        if: env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C'
         run: |
           python ai/render_scanner_report.py \
             --tool tfsec \
@@ -152,17 +138,15 @@ jobs:
             --output run-results/pr_comment_tfsec.md
 
       - name: Setup Python dependencies
-        if: env.EXPERIMENT_CONDITION == 'B' || env.EXPERIMENT_CONDITION == 'C'
         run: python -m pip install requests
 
       - name: Run independent AI review
-        if: env.EXPERIMENT_CONDITION == 'B' || env.EXPERIMENT_CONDITION == 'C'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python ai/review_runner.py
 
       - name: Post Checkov PR comment
-        if: always() && (env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C') && env.PR_NUMBER != ''
+        if: always() && env.PR_NUMBER != ''
         uses: actions/github-script@v7
         with:
           script: |
@@ -178,7 +162,7 @@ jobs:
             });
 
       - name: Post tfsec PR comment
-        if: always() && (env.EXPERIMENT_CONDITION == 'A' || env.EXPERIMENT_CONDITION == 'C') && env.PR_NUMBER != ''
+        if: always() && env.PR_NUMBER != ''
         uses: actions/github-script@v7
         with:
           script: |
@@ -194,7 +178,7 @@ jobs:
             });
 
       - name: Post AI PR comment
-        if: always() && (env.EXPERIMENT_CONDITION == 'B' || env.EXPERIMENT_CONDITION == 'C') && env.PR_NUMBER != ''
+        if: always() && env.PR_NUMBER != ''
         uses: actions/github-script@v7
         with:
           script: |
