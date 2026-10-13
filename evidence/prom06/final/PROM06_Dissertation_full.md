@@ -36,7 +36,7 @@ I declare the following:
 
 (1) that the material contained in this dissertation is the end result of my own work and that due acknowledgement has been given in the bibliography and references to ALL sources be they printed, electronic or personal.
 
-(2) the Word Count of this Dissertation is 10,046
+(2) the Word Count of this Dissertation is 10,343
 
 (3) that unless this dissertation has been confirmed as confidential, I agree to an entire electronic copy or sections of the dissertation to being placed on the eLearning Portal, if deemed appropriate, to allow future students the opportunity to see examples of past dissertations. I understand that if displayed on the eLearning Portal it would be made available for no longer than five years and that students would be able to print off copies or download.
 
@@ -630,6 +630,14 @@ Table 4.1 shows how the AI's 45 confirmed findings divide.
 | FALSE | 7 | Tags required on `azurerm_role_definition` (TC10 ×2) and `azurerm_network_security_rule` (TC12 ×2); TC12 HTTPS treated as a defect (×2); TC14 destination scope |
 | Total | 45 | Precision (TARGET + EXTRA-VALID) / total = 82% |
 
+### Sensitivity to the design of the negative controls
+
+Three of the seven false findings need qualification. Both negative controls added their allow rule to the network security group shared by the whole subnet, with a wildcard destination (`destination_address_prefix = "*"`). The TC12 rule therefore exposes port 443 on every host in the subnet, not on a single web endpoint, and the TC14 rule does the same for SSH. The ground truth, fixed before execution, considered only the source of each rule, and Table 4.1 follows it.
+
+However, the two TC12 findings that called the exposure broader than its documented justification, and the TC14 finding about the wildcard destination, describe the configuration accurately. They point to a weakness in the test fixtures, not an invented one.
+
+If these three findings are treated as valid, false findings fall from 7 to 4 and precision rises from 82% to 89% (40 of 45). Two of the nine non-vulnerable runs would then carry a false finding instead of three. The four remaining false findings are all claims that resources which cannot be tagged must carry tags. The classification in Table 4.1 is kept because changing the ground truth after seeing the results would weaken the study more than the flaw does. tfsec's TC12 alert is unaffected, because its rule concerns the public source of the traffic, not its destination.
+
 ## 4.4 Results from the Hybrid Approach
 
 The hybrid condition is examined in two forms, which must not be merged.
@@ -673,7 +681,7 @@ The scanners' errors were omissions, and those omissions were stable. A missing 
 The AI's errors were of a different kind:
 
 - **inconsistent classification,** as in TC08;
-- **over-reporting on acceptable configurations,** as in TC12 and TC14;
+- **over-reporting on acceptable configurations,** as in TC12 and TC14, although part of this reflects the fixtures' wildcard destinations (Section 4.3);
 - **false claims about the platform.**
 
 The most telling false claims concerned tags. In TC10 and TC12 the AI asserted that resources which cannot be tagged must carry mandatory tags. In a later run of TC12 it correctly stated the opposite. Applying its TC10 recommendation as written made `terraform validate` fail with "An argument named "tags" is not expected here".
@@ -839,6 +847,7 @@ The following threats limit what the results can support:
   - Several test files contained comments that described their purpose, including "Ground truth" and "Deliberately unrestricted". The AI demonstrably read these comments, so some of its detections and acceptances may have been cued.
   - TC07 was not a single-variable case, and TC11 did not isolate the cross-file reasoning it was meant to test.
   - The policy file given only to the AI favoured it on four cases.
+  - The negative controls TC12 and TC14 placed their allow rules on the shared subnet security group with a wildcard destination. The ground truth did not consider this scope, so three AI findings counted as false are arguably valid (Section 4.3).
 - **Internal validity.**
   - The TC01 baseline and the prompt were refined after early AI findings, so the reviewer was partly tuned on the test material.
   - The hybrid results come from an earlier phase with a different prompt and fixture state, so they cannot be compared cleanly with the independent runs.
@@ -876,6 +885,7 @@ If I started again, I would:
 
 - prove the independence of each condition before running any tests;
 - remove explanatory comments from test files;
+- scope each negative control to a single resource, so that intended exposure is not confounded with a wider weakness;
 - pin every tool and model version and record them in the run metadata;
 - plan for a second human scorer from the outset.
 
@@ -1958,6 +1968,7 @@ Source: results workbook `PROM06_TC01-TC12_Verified_Results_Matrix.xlsx` (eviden
 | 8 | Ground truth source | Use Confluence v72 per-case ground truth (more specific than GT Matrix v1.0); note GT v1.0 TC04 wording differs. | Agreed — proposed treatment adopted (AB, 13 Oct 2026) |
 | 9 | Checkov TC02–TC04 misses | Report as reproducible rule-matching limitation with the local probe as evidence. | Agreed — proposed treatment adopted (AB, 13 Oct 2026) |
 | 10 | Close PRs #56–#81 without merging after sign-off | — | Agreed — proposed treatment adopted (AB, 13 Oct 2026) |
+| 11 | TC12/TC14 wildcard-destination scope in AI confirmed findings (TC12 run 1 F-001, F-002; TC14 run 1 F-001) | Keep FALSE per pre-fixed ground truth; report sensitivity in Ch4.3 and Ch5 validity: FALSE 7→4, precision 82%→89% (40/45), non-vulnerable runs with a false finding 3→2 of 9. tfsec AVD-AZU-0047 concerns source only, so unaffected. Implements decision #1. | Agreed (AB, 13 Oct 2026) |
 
 : Table E.6: Pipeline timing across 46 independent runs (seconds)
 

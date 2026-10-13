@@ -41,6 +41,7 @@ The following threats limit what the results can support:
   - Several test files contained comments that described their purpose, including "Ground truth" and "Deliberately unrestricted". The AI demonstrably read these comments, so some of its detections and acceptances may have been cued.
   - TC07 was not a single-variable case, and TC11 did not isolate the cross-file reasoning it was meant to test.
   - The policy file given only to the AI favoured it on four cases.
+  - The negative controls TC12 and TC14 placed their allow rules on the shared subnet security group with a wildcard destination. The ground truth did not consider this scope, so three AI findings counted as false are arguably valid (Section 4.3).
 - **Internal validity.**
   - The TC01 baseline and the prompt were refined after early AI findings, so the reviewer was partly tuned on the test material.
   - The hybrid results come from an earlier phase with a different prompt and fixture state, so they cannot be compared cleanly with the independent runs.
@@ -78,6 +79,7 @@ If I started again, I would:
 
 - prove the independence of each condition before running any tests;
 - remove explanatory comments from test files;
+- scope each negative control to a single resource, so that intended exposure is not confounded with a wider weakness;
 - pin every tool and model version and record them in the run metadata;
 - plan for a second human scorer from the outset.
 

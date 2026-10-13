@@ -97,6 +97,14 @@ Table 4.1: AI confirmed findings across 46 independent runs
 | FALSE | 7 | Tags required on `azurerm_role_definition` (TC10 ×2) and `azurerm_network_security_rule` (TC12 ×2); TC12 HTTPS treated as a defect (×2); TC14 destination scope |
 | Total | 45 | Precision (TARGET + EXTRA-VALID) / total = 82% |
 
+### Sensitivity to the design of the negative controls
+
+Three of the seven false findings need qualification. Both negative controls added their allow rule to the network security group shared by the whole subnet, with a wildcard destination (`destination_address_prefix = "*"`). The TC12 rule therefore exposes port 443 on every host in the subnet, not on a single web endpoint, and the TC14 rule does the same for SSH. The ground truth, fixed before execution, considered only the source of each rule, and Table 4.1 follows it.
+
+However, the two TC12 findings that called the exposure broader than its documented justification, and the TC14 finding about the wildcard destination, describe the configuration accurately. They point to a weakness in the test fixtures, not an invented one.
+
+If these three findings are treated as valid, false findings fall from 7 to 4 and precision rises from 82% to 89% (40 of 45). Two of the nine non-vulnerable runs would then carry a false finding instead of three. The four remaining false findings are all claims that resources which cannot be tagged must carry tags. The classification in Table 4.1 is kept because changing the ground truth after seeing the results would weaken the study more than the flaw does. tfsec's TC12 alert is unaffected, because its rule concerns the public source of the traffic, not its destination.
+
 ## 4.4 Results from the Hybrid Approach
 
 The hybrid condition is examined in two forms, which must not be merged.
@@ -140,7 +148,7 @@ The scanners' errors were omissions, and those omissions were stable. A missing 
 The AI's errors were of a different kind:
 
 - **inconsistent classification,** as in TC08;
-- **over-reporting on acceptable configurations,** as in TC12 and TC14;
+- **over-reporting on acceptable configurations,** as in TC12 and TC14, although part of this reflects the fixtures' wildcard destinations (Section 4.3);
 - **false claims about the platform.**
 
 The most telling false claims concerned tags. In TC10 and TC12 the AI asserted that resources which cannot be tagged must carry mandatory tags. In a later run of TC12 it correctly stated the opposite. Applying its TC10 recommendation as written made `terraform validate` fail with "An argument named "tags" is not expected here".
