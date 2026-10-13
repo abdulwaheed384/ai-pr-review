@@ -5,8 +5,7 @@ resource "azurerm_network_security_group" "nsg" {
   resource_group_name = azurerm_resource_group.rg.name
   tags                = local.common_tags
 
-  # TC04: Deliberately public HTTP access for security testing only.
-  # This rule permits inbound TCP/80 from any IPv4 address.
+  # TC04 remediated: HTTP restricted to the approved test-harness address.
   security_rule {
     name                       = "AllowHTTP"
     priority                   = 302
