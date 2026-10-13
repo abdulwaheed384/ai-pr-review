@@ -5,8 +5,7 @@ resource "azurerm_network_security_group" "nsg" {
   resource_group_name = azurerm_resource_group.rg.name
   tags                = local.common_tags
 
-  # TC03: Deliberately unrestricted RDP access.
-  # This insecure rule is for controlled security testing only.
+  # TC03 remediated: RDP restricted to the approved administration address.
   security_rule {
     name                       = "AllowRDP"
     priority                   = 301
