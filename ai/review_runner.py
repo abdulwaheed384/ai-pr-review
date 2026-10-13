@@ -62,95 +62,9 @@ def get_terraform_review_context():
         raise RuntimeError(f"Could not collect changed Terraform files: {exc}") from exc
 
 
-def _clip_scanner_value(value, limit=MAX_SCANNER_FIELD_CHARS):
-    if value is None:
-        return ""
-    return str(value).strip()[:limit]
-
-
-def build_scanner_context(results_dir):
-    """Load a bounded summary of scanner results for Condition C only."""
-    scanners = {}
-    for tool in ("checkov", "tfsec"):
-        json_path = results_dir / f"{tool}-results.json"
-        exit_path = results_dir / f"{tool}-exit-code.txt"
-        try:
-            data = json.loads(json_path.read_text(encoding="utf-8"))
-            exit_code = int(exit_path.read_text(encoding="utf-8").strip())
-        except (OSError, ValueError, json.JSONDecodeError):
-            scanners[tool] = {"status": "UNAVAILABLE_OR_INVALID", "findings": []}
-            continue
-
-        findings = []
-        if tool == "checkov":
-            if isinstance(data, list):
-                data = data[0] if data else {}
-            checks = data.get("results", {}) if isinstance(data, dict) else {}
-            failed = checks.get("failed_checks") if isinstance(checks, dict) else None
-            if not isinstance(failed, list):
-                scanners[tool] = {"status": "UNAVAILABLE_OR_INVALID", "findings": []}
-                continue
-            for item in failed[:MAX_SCANNER_FINDINGS]:
-                if not isinstance(item, dict):
-                    continue
-                findings.append({
-                    "rule": _clip_scanner_value(item.get("check_id")),
-                    "description": _clip_scanner_value(item.get("check_name") or item.get("description")),
-                    "resource": _clip_scanner_value(item.get("resource")),
-                    "file": _clip_scanner_value(item.get("file_path")),
-                    "severity": _clip_scanner_value(item.get("severity")),
-                })
-        else:
-            if isinstance(data, dict):
-                findings_data = data.get("results", [])
-            else:
-                findings_data = data
-            if not isinstance(findings_data, list):
-                scanners[tool] = {"status": "UNAVAILABLE_OR_INVALID", "findings": []}
-                continue
-            for item in findings_data[:MAX_SCANNER_FINDINGS]:
-                if not isinstance(item, dict):
-                    continue
-                location = item.get("location") or {}
-                if not isinstance(location, dict):
-                    location = {}
-                findings.append({
-                    "rule": _clip_scanner_value(item.get("rule_id")),
-                    "description": _clip_scanner_value(item.get("description")),
-                    "resource": _clip_scanner_value(item.get("resource")),
-                    "file": _clip_scanner_value(location.get("filename")),
-                    "severity": _clip_scanner_value(item.get("severity")),
-                })
-
-        if findings:
-            status = "COMPLETED_WITH_FINDINGS"
-        elif exit_code == 0:
-            status = "COMPLETED_CLEAN"
-        else:
-            status = "EXECUTION_ERROR"
-        scanners[tool] = {
-            "status": status,
-            "exit_code": exit_code,
-            "findings": findings,
-            "truncated": max(
-                0,
-                len(failed if tool == "checkov" else findings_data) - MAX_SCANNER_FINDINGS,
-            ),
-        }
-    return scanners
-
-
-def assemble_review_prompt(prompt, terraform_context, condition, results_dir):
-    full_prompt = prompt + "\n\nTerraform Changes and Full Repository Context:\n" + terraform_context
-    scanner_context = None
-    if condition == "C":
-        scanner_context = build_scanner_context(results_dir)
-        full_prompt += (
-            "\n\nCondition C supporting scanner evidence (normalized from the separate raw artifacts; "
-            "this is evidence to assess, not authoritative ground truth):\n"
-            + json.dumps(scanner_context, indent=2, ensure_ascii=False)
-        )
-    return full_prompt, scanner_context
+def assemble_review_prompt(prompt, terraform_context):
+    """Build an AI prompt from Terraform and repository context only."""
+    return prompt + "\n\nTerraform Changes and Full Repository Context:\n" + terraform_context
 
 
 def call_ai(prompt):
@@ -411,9 +325,9 @@ def write_json(path, value):
 def main():
     results_dir = ROOT / "run-results"
     results_dir.mkdir(exist_ok=True)
-    condition = os.environ.get("EXPERIMENT_CONDITION", "C").upper()
-    if condition not in {"A", "B", "C"}:
-        raise ValueError("EXPERIMENT_CONDITION must be A, B, or C")
+    condition = os.environ.get("EXPERIMENT_CONDITION", "INDEPENDENT").upper()
+    if condition != "INDEPENDENT":
+        raise ValueError("EXPERIMENT_CONDITION must be INDEPENDENT")
 
     changed_files, terraform_context = get_terraform_review_context()
     if not changed_files:
@@ -431,9 +345,7 @@ def main():
         return
 
     prompt = load_file("ai/prompt.txt")
-    full_prompt, scanner_context = assemble_review_prompt(
-        prompt, terraform_context, condition, results_dir
-    )
+    full_prompt = assemble_review_prompt(prompt, terraform_context)
     raw_response = call_ai_with_retry(full_prompt)
     (results_dir / "ai_raw_response.txt").write_text(raw_response, encoding="utf-8")
     review = validate_review(parse_model_json(raw_response))
@@ -447,7 +359,7 @@ def main():
         "experiment_condition": condition,
         "scoring_config": "ai/scoring.json",
         "classification_policy_version": CLASSIFICATION_POLICY_VERSION,
-        "scanner_context": scanner_context,
+        "scanner_findings_supplied_to_ai": False,
         "processing_audit": {"deduplicated_findings": duplicates},
     })
     write_json(results_dir / "ai_output.json", review)

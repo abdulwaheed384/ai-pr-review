@@ -8,7 +8,6 @@ from pathlib import Path
 from ai.review_runner import (
     calculate_operational_score,
     assemble_review_prompt,
-    build_scanner_context,
     deduplicate_findings,
     format_comment,
     parse_model_json,
@@ -107,7 +106,7 @@ class ReviewRunnerTests(unittest.TestCase):
         review["summary"] = "DenyAllOutbound is redundant and the daily quota should be removed."
         review["positives"] = ["The daily_quota_gb setting may cap ingestion."]
         review["final_recommendation"] = "Review daily_quota_gb and DenyAllOutbound."
-        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "C"})
+        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "INDEPENDENT"})
         comment = format_comment(review)
         self.assertNotIn("DenyAllOutbound", comment)
         self.assertNotIn("Observations", comment)
@@ -126,7 +125,7 @@ class ReviewRunnerTests(unittest.TestCase):
                 status="INFORMATIONAL",
             )
         ]))
-        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "C"})
+        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "INDEPENDENT"})
         comment = format_comment(review)
         self.assertNotIn("daily_quota_gb", comment)
         self.assertNotIn("Daily quota", comment)
@@ -151,7 +150,7 @@ class ReviewRunnerTests(unittest.TestCase):
                 identifier="F-002",
             ),
         ]))
-        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "C"})
+        review.update({"operational_score": 100, "risk_level": "LOW", "verdict": "APPROVE", "experiment_condition": "INDEPENDENT"})
         with tempfile.TemporaryDirectory() as temporary:
             audit_path = Path(temporary) / "ai_output.json"
             write_json(audit_path, review)
@@ -175,7 +174,7 @@ class ReviewRunnerTests(unittest.TestCase):
                     "operational_score": score,
                     "risk_level": risk_level,
                     "verdict": verdict,
-                    "experiment_condition": "C",
+                    "experiment_condition": "INDEPENDENT",
                 })
                 self.assertIn(title, format_comment(review))
 
@@ -189,35 +188,24 @@ class ReviewRunnerTests(unittest.TestCase):
         prompt = (Path(__file__).parents[1] / "ai/prompt.txt").read_text()
         self.assertIn("never a reason by itself to suppress a demonstrated weakness", prompt)
 
-    def test_only_condition_c_receives_normalized_scanner_context_and_raw_is_preserved(self):
+    def test_independent_ai_prompt_never_includes_scanner_outputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             results_dir = Path(temporary)
-            checkov_raw = {
-                "results": {
-                    "failed_checks": [{
-                        "check_id": "CKV_AZURE_1",
-                        "check_name": "Example scanner report",
-                        "resource": "azurerm_network_security_group.nsg",
-                        "file_path": "terraform/nsg.tf",
-                        "severity": "LOW",
-                    }]
-                }
-            }
-            (results_dir / "checkov-results.json").write_text(json.dumps(checkov_raw))
-            (results_dir / "checkov-exit-code.txt").write_text("1")
-            (results_dir / "tfsec-results.json").write_text("[]")
-            (results_dir / "tfsec-exit-code.txt").write_text("0")
-            before = (results_dir / "checkov-results.json").read_text()
+            (results_dir / "checkov-results.json").write_text(
+                json.dumps({"results": {"failed_checks": [{
+                    "check_id": "CKV_AZURE_1",
+                    "check_name": "Example scanner report",
+                }]}})
+            )
+            (results_dir / "tfsec-results.json").write_text(
+                json.dumps([{"rule_id": "AVD-AZU-0001", "description": "Example tfsec report"}])
+            )
 
-            only_prompt, no_scanners = assemble_review_prompt("Review", "Terraform", "B", results_dir)
-            combined_prompt, scanners = assemble_review_prompt("Review", "Terraform", "C", results_dir)
-            self.assertIsNone(no_scanners)
-            self.assertNotIn("CKV_AZURE_1", only_prompt)
-            self.assertIn("CKV_AZURE_1", combined_prompt)
-            self.assertEqual(scanners["checkov"]["status"], "COMPLETED_WITH_FINDINGS")
-            self.assertEqual(scanners["tfsec"]["status"], "COMPLETED_CLEAN")
-            self.assertEqual((results_dir / "checkov-results.json").read_text(), before)
-            self.assertEqual(build_scanner_context(results_dir), scanners)
+            prompt = assemble_review_prompt("Review", "Terraform code and repository policy")
+            self.assertIn("Terraform code and repository policy", prompt)
+            self.assertNotIn("CKV_AZURE_1", prompt)
+            self.assertNotIn("AVD-AZU-0001", prompt)
+            self.assertNotIn("scanner", prompt.lower())
 
     def test_missing_evidence_is_rejected_and_uncertainty_must_be_explicit(self):
         unsupported = finding(
@@ -263,7 +251,7 @@ class ReviewRunnerTests(unittest.TestCase):
         self.assertEqual(audit[0]["retained_id"], "F-001")
         self.assertEqual(len(review["policy_violations"]), 1)
         self.assertEqual(review["policy_violations"][0]["finding_id"], "F-001")
-        review.update({"operational_score": 70, "risk_level": "MEDIUM", "verdict": "APPROVE_WITH_COMMENTS", "experiment_condition": "C"})
+        review.update({"operational_score": 70, "risk_level": "MEDIUM", "verdict": "APPROVE_WITH_COMMENTS", "experiment_condition": "INDEPENDENT"})
         comment = format_comment(review)
         self.assertIn("Public SSH", comment)
         self.assertEqual(comment.count("Public SSH"), 1)

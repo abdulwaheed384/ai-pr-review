@@ -119,7 +119,7 @@ def main():
     parser.add_argument("--input", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--exit-code", type=int, required=True)
-    parser.add_argument("--condition", choices=("A", "B", "C"), required=True)
+    parser.add_argument("--condition", choices=("INDEPENDENT",), required=True)
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
