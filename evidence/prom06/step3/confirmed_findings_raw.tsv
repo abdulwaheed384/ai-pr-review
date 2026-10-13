@@ -1,0 +1,55 @@
+tc	run_no	run_id	finding	severity	title	source
+TC01	1	38404582550	-	-	(no confirmed findings)	ai_output.json
+TC01	2	38405003190	-	-	(no confirmed findings)	ai_output.json
+TC01	3	38405111880	-	-	(no confirmed findings)	ai_output.json
+TC02	1	38404584887	F-001	HIGH	Unrestricted inbound SSH access permitted from any source address	ai_output.json
+TC02	2	38405012851	F-001	HIGH	Inbound SSH (port 22) permitted from any source address (0.0.0.0/0)	ai_output.json
+TC02	3	38405121064	F-001	HIGH	NSG permits inbound SSH (TCP/22) from any source (0.0.0.0/0)	ai_output.json
+TC03	1	38404589228	F-001	HIGH	RDP (TCP/3389) publicly accessible from any source address	ai_output.json
+TC03	2	38405022162	F-001	HIGH	Unrestricted inbound RDP (port 3389) permitted from 0.0.0.0/0	ai_output.json
+TC03	3	38405130215	F-001	HIGH	Unrestricted inbound RDP access from any source (0.0.0.0/0) on port 3389	ai_output.json
+TC03	3	38405130215	F-002	HIGH	SEC-001 violation: public RDP exposure without documented policy justification	ai_output.json
+TC04	1	38404592498	F-001	HIGH	Unrestricted inbound HTTP (TCP/80) permitted from any source via NSG rule	ai_output.json
+TC04	2	38405031009	F-001	HIGH	NSG allows unrestricted inbound HTTP (TCP/80) from any IPv4 address	ai_output.json
+TC04	3	38405139458	F-001	HIGH	NSG rule permits unrestricted inbound HTTP (TCP/80) from any IPv4 source	ai_output.json
+TC05	1	38404594354	F-001	HIGH	Subnet has no NSG association (NET-001 violation)	ai_output.json
+TC05	2	38405039302	F-001	HIGH	Subnet 'subnet-demo' has no NSG association (NET-001 violation)	ai_output.json
+TC05	3	38405149036	F-001	MEDIUM	Subnet has no NSG association (NET-001 violation)	ai_output.json
+TC06	1	38404596950	F-001	MEDIUM	Virtual Network uses a public DNS server in violation of NET-002	ai_output.json
+TC06	2	38405047995	F-001	MEDIUM	VNet configured with public DNS resolver in violation of NET-002	ai_output.json
+TC06	3	38405157604	F-001	MEDIUM	VNet configured with public DNS server in violation of NET-002	ai_output.json
+TC07	1	38404600206	F-001	HIGH	Storage account permits insecure TLS 1.0 and TLS 1.1 connections	ai_output.json
+TC07	1	38404600206	F-002	LOW	Storage account missing mandatory tags: owner, cost-center, research_case	ai_output.json
+TC07	2	38405057461	F-001	HIGH	Storage account allows deprecated TLS 1.0 connections	ai_output.json
+TC07	2	38405057461	F-002	LOW	Storage account missing mandatory tags: owner and cost-center	ai_output.json
+TC07	3	38405166219	F-001	HIGH	Storage account permits deprecated TLS 1.0 connections	ai_output.json
+TC07	3	38405166219	F-002	LOW	Storage account missing mandatory tags: owner and cost-center	ai_output.json
+TC08	1	38404605125	-	-	(no ai_output.json: run failed validation)	artifact
+TC08	2	38405066857	-	-	(no confirmed findings)	ai_output.json
+TC08	3	38405174844	-	-	(no confirmed findings)	ai_output.json
+TC08	4	38405218950	F-001	MEDIUM	No diagnostic setting configured to forward NSG logs to Log Analytics	ai_output.json
+TC09	1	38404607277	F-001	MEDIUM	Hardcoded secret value embedded in Terraform local in source-controlled file	ai_output.json
+TC09	2	38405075984	F-001	MEDIUM	Hardcoded credential-shaped string stored as a plaintext Terraform local in source control	ai_output.json
+TC09	3	38405183161	F-001	MEDIUM	Hardcoded secret-like string embedded in Terraform local value	ai_output.json
+TC10	1	38404612132	F-001	HIGH	Custom role definition grants unrestricted wildcard ('*') permissions at subscription scope	ai_output.json
+TC10	1	38404612132	F-002	LOW	Custom role definition is missing mandatory tags required by TAG-001	ai_output.json
+TC10	2	38405084901	F-001	HIGH	Custom role definition grants wildcard (*) permissions at subscription scope	ai_output.json
+TC10	3	38405192342	F-001	HIGH	Subscription-scoped wildcard role definition grants unrestricted ARM permissions	ai_output.json
+TC10	3	38405192342	F-002	LOW	Custom role definition missing mandatory tags required by TAG-001	ai_output.json
+TC11	1	38404613836	F-001	HIGH	Custom RBAC role grants wildcard (*) permissions at subscription scope, violating least privilege	ai_output.json
+TC11	2	38405093864	F-001	HIGH	Custom role grants wildcard subscription-scope permissions far exceeding documented task requirements	ai_output.json
+TC11	3	38405200842	F-001	HIGH	Custom role definition grants wildcard subscription-scope permissions far exceeding documented task requirements	ai_output.json
+TC12	1	38404619147	F-001	HIGH	NSG rule permits unrestricted public inbound HTTPS to the entire subnet	ai_output.json
+TC12	1	38404619147	F-002	MEDIUM	SEC-001: Public exposure broader than documented justification	ai_output.json
+TC12	1	38404619147	F-003	LOW	TAG-001: azurerm_network_security_rule.tc12_public_https missing mandatory tags	ai_output.json
+TC12	2	38405103514	F-001	LOW	NSG security rule tc12_public_https is missing mandatory tags (TAG-001)	ai_output.json
+TC12	3	38405210047	-	-	(no confirmed findings)	ai_output.json
+TC13	1	38409744211	F-001	HIGH	Reporting identity assigned Contributor at subscription scope instead of Reader at resource group scope	PR #82 comment 2026-10-13T14:02:01Z
+TC13	2	38409804722	F-001	HIGH	Managed identity granted Contributor at subscription scope instead of Reader at resource group scope	PR #82 comment 2026-10-13T14:02:36Z
+TC13	3	38409830032	F-001	HIGH	Managed identity granted Contributor at subscription scope; requirements specify Reader at resource-group scope	PR #82 comment 2026-10-13T14:02:40Z
+TC14	1	38409748586	F-001	LOW	SSH allow rule uses wildcard destination, permitting access to any subnet host	PR #83 comment 2026-10-13T14:02:14Z
+TC14	2	38409813127	-	-	(no confirmed findings)	PR #83 comment 2026-10-13T14:02:38Z
+TC14	3	38409838825	-	-	(no confirmed findings)	PR #83 comment 2026-10-13T14:02:57Z
+TC15	1	38409752049	F-001	HIGH	Hardcoded plaintext administrator password in Terraform variable default	PR #84 comment 2026-10-13T14:02:15Z
+TC15	2	38409821867	F-001	HIGH	Hardcoded plaintext database password committed as a Terraform variable default	PR #84 comment 2026-10-13T14:02:50Z
+TC15	3	38409847744	F-001	HIGH	Hardcoded plaintext password in Terraform variable default	PR #84 comment 2026-10-13T14:02:52Z
