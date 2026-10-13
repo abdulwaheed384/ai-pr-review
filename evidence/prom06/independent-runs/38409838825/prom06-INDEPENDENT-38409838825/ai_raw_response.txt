@@ -1,0 +1,55 @@
+```json
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces an NSG with inbound/outbound deny-all rules plus a scoped SSH allow rule, a Log Analytics Workspace with private-only access, an Azure Monitor Private Link Scope, a private endpoint, private DNS zones, and NSG diagnostic settings. The configuration is tagged as a research workload (PROM06-TC01). No confirmed security vulnerabilities or policy violations are present. One low-severity confirmed finding is raised for the NSG diagnostic setting lacking a Log Analytics destination type specification, which is a minor but supported omission. Overall the configuration demonstrates strong security posture for a research workload.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "The SSH allow rule at priority 300 permits inbound TCP port 22 from source 203.0.113.10/32, documented as an 'approved bastion address'. Whether this address is a controlled, managed bastion host with appropriate access controls, or an unmanaged external IP, cannot be determined from the supplied Terraform alone. The security posture of this rule depends on the ownership and control of that source IP.",
+      "severity": "MEDIUM",
+      "title": "SSH inbound rule scoped to a single external IP — bastion host ownership unverifiable from IaC",
+      "description": "The NSG rule 'AllowSSHFromBastion' (priority 300) permits TCP/22 inbound from 203.0.113.10/32, described in a comment as an 'approved bastion address'. The /32 scope is appropriately restrictive, but the supplied Terraform does not provision or reference a bastion host resource at that address, and no documentation confirms organisational ownership or MFA/PAM controls on that IP. If the address is not a managed bastion, the SSH exposure could be broader than intended.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowSSHFromBastion': source_address_prefix = '203.0.113.10/32', destination_port_range = '22', access = 'Allow', priority = 300, direction = 'Inbound'.",
+      "impact": "If 203.0.113.10/32 is not a controlled, MFA-protected bastion with privileged access management, SSH access to subnet resources could be reachable from an inadequately protected endpoint, increasing lateral movement risk.",
+      "recommendation": "Confirm in documentation or IaC that 203.0.113.10/32 is an organisationally managed and MFA-protected bastion or jump host. If Azure Bastion is available in the environment, consider migrating to it to remove direct SSH exposure. If the address is externally managed, document the compensating controls applied to that host."
+    },
+    {
+      "id": "F-002",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "The outbound DenyAllOutbound rule at priority 4096 might appear redundant given Azure's default outbound allow rules at 65000/65001 and default deny at 65500. However, as the comment in the NSG correctly states, priority 4096 is evaluated before Azure's default rules (65000, 65001, 65500), making this an effective explicit deny-all outbound baseline. The subnet also has default_outbound_access_enabled = false in network.tf, adding a further outbound restriction. This is an intentional defense-in-depth control, not a weakness.",
+      "severity": "INFORMATIONAL",
+      "title": "Outbound deny-all rule is intentional and effective — not redundant",
+      "description": "The DenyAllOutbound rule at priority 4096 combined with default_outbound_access_enabled = false on the subnet constitutes an intentional restrictive outbound posture. No outbound allow rules are configured in the NSG, meaning all outbound traffic is blocked. This is consistent with the research/experimental nature of the workload and is a positive security control.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'DenyAllOutbound': priority = 4096, direction = 'Outbound', access = 'Deny'; azurerm_subnet.subnet: default_outbound_access_enabled = false.",
+      "impact": "No impact — this is a correctly configured restrictive control.",
+      "recommendation": "No action required. If outbound connectivity is needed in future (e.g., for agent telemetry to the private endpoint), explicit allow rules at a lower priority than 4096 would be required."
+    },
+    {
+      "id": "F-003",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "The Log Analytics Workspace has retention_in_days = 30 and daily_quota_gb = 1. No supplied policy (LOG-001 or others) specifies a minimum retention period or minimum daily ingestion quota. The README documents that the daily quota is a research cost cap, and LOG-001 requires only that logs are collected and forwarded — which is satisfied by the azurerm_monitor_diagnostic_setting.nsg resource. There is no policy violation here.",
+      "severity": "INFORMATIONAL",
+      "title": "Log Analytics 30-day retention and 1 GB/day quota are intentional research cost controls",
+      "description": "The workspace law-prom06-tc01-uks is configured with 30-day retention and a 1 GB daily ingestion cap. These are cost-appropriate settings for a research workload as noted in project documentation. LOG-001 requires log collection and forwarding, which is satisfied. No supplied policy mandates a longer retention period or higher quota for this workload type.",
+      "evidence": "azurerm_log_analytics_workspace.network: retention_in_days = 30, daily_quota_gb = 1. azurerm_monitor_diagnostic_setting.nsg enables 'NetworkSecurityGroupEvent' and 'NetworkSecurityGroupRuleCounter' categories forwarded to the workspace.",
+      "impact": "No current security defect. Operationally, the 1 GB/day cap could suppress logs under high traffic, but this is a documented and intentional research tradeoff.",
+      "recommendation": "No action required under current policy. If this workload is promoted to production, review retention requirements and remove or raise the daily ingestion cap against applicable production log retention obligations."
+    }
+  ],
+  "policy_violations": [],
+  "positives": [
+    "TAG-001 compliance: All taggable resources (NSG, Log Analytics Workspace, AMPLS, private endpoint, private DNS zones, VNet DNS links) carry the required environment, owner, and cost-center tags, plus the research_case identifier.",
+    "NET-001 compliance: The subnet 'subnet-demo' has an NSG association via azurerm_subnet_network_security_group_association.subnet.",
+    "SEC-001 compliance: No public endpoints are exposed. The Log Analytics Workspace has internet_ingestion_enabled = false and internet_query_enabled = false. The AMPLS uses PrivateOnly for both ingestion and query. The private endpoint with five private DNS zones provides the only connectivity path.",
+    "LOG-001 compliance: azurerm_monitor_diagnostic_setting.nsg enables both applicable NSG diagnostic categories (NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter) and forwards them to the Log Analytics Workspace.",
+    "Strong NSG posture: Explicit deny-all inbound (priority 4096) and deny-all outbound (priority 4096) rules establish a minimal-privilege baseline. The only inbound allow is SSH from a single /32 source address. Combined with default_outbound_access_enabled = false on the subnet, outbound traffic is doubly restricted.",
+    "Private-only Log Analytics access: local_authentication_enabled = false enforces AAD-only authentication. The AMPLS with PrivateOnly access modes ensures workspace data cannot be ingested or queried over public internet paths.",
+    "NET-003 not applicable: The workload is explicitly tagged environment = 'research' and the comment in network.tf acknowledges this exemption, correctly omitting DDoS Protection Standard.",
+    "DNS security: azurerm_virtual_network.vnet uses an empty dns_servers list (Azure DNS / custom resolver as documented) rather than public DNS servers, satisfying NET-002."
+  ],
+  "final_recommendation": "The nsg.tf change demonstrates a well-structured, policy-compliant security configuration for a research workload. All applicable policies (NET-001, NET-002, LOG-001, TAG-001, SEC-001) are satisfied. The one NEEDS_CONTEXT item (F-001) concerns the unverifiable ownership of the SSH source IP 203.0.113.10/32 — this should be addressed by confirming in documentation that the address is an organisationally managed and MFA-protected bastion. No mandatory remediation is required before merge; confirming the bastion host provenance is the only outstanding action."
+}
+```

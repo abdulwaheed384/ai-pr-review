@@ -1,0 +1,43 @@
+{
+  "summary": "The changed files introduce a User-Assigned Managed Identity (tc13_reporting) and a role assignment for PROM06 TC13. The critical finding is that the role assignment grants Contributor access at subscription scope, while tc13_requirements.tf explicitly documents that only Reader access on the research resource group is required. This over-privileged assignment is a confirmed security vulnerability. No other defects are demonstrated by the supplied configuration.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The Terraform code directly demonstrates that the managed identity is granted Contributor (write/delete) access at subscription scope, while tc13_requirements.tf explicitly states that the task requires only Reader access scoped to the research resource group. The misconfiguration violates least-privilege and is evidenced entirely within the changed files without requiring external context.",
+      "severity": "HIGH",
+      "title": "Managed identity granted Contributor at subscription scope; requirements specify Reader at resource-group scope",
+      "description": "azurerm_role_assignment.tc13_reporting assigns the Contributor built-in role to the tc13_reporting managed identity with scope set to data.azurerm_subscription.tc13_current.id (the entire subscription). The tc13_requirements.tf file in the same PR explicitly documents that the required role is Reader, the required scope is the research resource group, and that write access is not required (tc13_write_access_required = false). Contributor grants create, update, and delete permissions across every resource type in the subscription, far exceeding what the documented task (read resource information for weekly reporting) requires.",
+      "evidence": "azurerm_role_assignment.tc13_reporting: role_definition_name = \"Contributor\", scope = data.azurerm_subscription.tc13_current.id. tc13_requirements.tf locals: tc13_required_role = \"Reader\", tc13_required_scope = \"Research resource group (azurerm_resource_group.rg)\", tc13_write_access_required = false.",
+      "impact": "The identity can create, modify, or delete any resource across the entire subscription, including network controls, IAM assignments, storage accounts, and compute. If the identity or its credential is compromised, an attacker gains full write control over all subscription resources, not just the research resource group. This also bypasses the resource-group-level blast-radius boundary implied by the documented scope requirement.",
+      "recommendation": "Change role_definition_name to \"Reader\" and change scope to azurerm_resource_group.rg.id to match the documented requirements. Example: scope = azurerm_resource_group.rg.id, role_definition_name = \"Reader\". This constrains the identity to read-only access on the single resource group, consistent with tc13_required_role, tc13_required_scope, and tc13_write_access_required = false."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "The managed identity azurerm_user_assigned_identity.tc13_reporting uses a User-Assigned identity rather than a service principal with a password, which avoids credential management risk.",
+    "principal_type = \"ServicePrincipal\" is explicitly set on the role assignment, which avoids ambiguous principal resolution.",
+    "The identity carries the common_tags (environment, owner, cost-center, research_case), satisfying TAG-001 for taggable resources.",
+    "tc13_requirements.tf clearly documents the intended least-privilege posture (Reader, resource-group scope, no write access), which is good practice even though the actual assignment diverges from it.",
+    "The file header comment ('Do not deploy') signals research-fixture intent, consistent with the broader project environment = research tag."
+  ],
+  "final_recommendation": "Before merging, correct azurerm_role_assignment.tc13_reporting to scope = azurerm_resource_group.rg.id and role_definition_name = \"Reader\". This single change brings the deployment into alignment with the explicitly documented access requirements in tc13_requirements.tf and eliminates the subscription-wide Contributor privilege. No other security defects are demonstrated by the supplied configuration.",
+  "operational_score": 70,
+  "verdict": "APPROVE_WITH_COMMENTS",
+  "risk_level": "MEDIUM",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

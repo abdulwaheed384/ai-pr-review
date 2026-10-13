@@ -40,12 +40,12 @@ for i,r in enumerate(rules,6):
         c=sr.cell(row=i,column=j,value=v); c.font=BB if j==1 else B; c.alignment=WR; c.border=BOR
     sr.row_dimensions[i].height=60
 notes=[
- "Scope: vulnerable cases (TC02–TC11) are scored on all six dimensions (max 12). Non-vulnerable cases (TC01, TC12) are scored on D, E and U only (max 6); I, R and C are 'n/a'.",
+ "Scope: vulnerable cases (TC02–TC11, TC13, TC15) are scored on all six dimensions (max 12). Non-vulnerable cases (TC01, TC12, TC14) are scored on D, E and U only (max 6); I, R and C are 'n/a'.",
  "Each run is scored separately (3 runs per case; 4 for TC08 because one PR run failed validation and a fourth dispatch was made).",
  "Only the AI output of the INDEPENDENT condition is scored (scanner_findings_supplied_to_ai = false). Hybrid (Condition C) outputs are not scored here.",
  "Policy mis-mapping is penalised under E only (not U) to avoid double counting; it is also flagged separately in column O of 'AI Quality Scoring' so analysis can exclude it.",
  "Disclosure / validity threat: the scorer is an AI assistant that read all outputs before writing these rules. To mitigate, AB should independently score the stratified sample on 'Inter-rater Check' before results are reported; agreement is calculated there.",
- "TC13–TC15 (added 13 Oct 2026) are not yet scored: their full ai_output.json artefacts still need to be downloaded.",
+ "TC13–TC15 (added 13 Oct 2026) were scored from their ai_output.json artefacts after AB downloaded them (13 Oct, 15:50), using the same rules.",
 ]
 r0=6+len(rules)+1
 sr.cell(row=r0,column=1,value="Application notes").font=BB
@@ -95,6 +95,15 @@ runs=[
 ("TC12",1,38404619147,"pull_request",N,"CONFIRMED HIGH (blocks)",0,1,NA,NA,NA,0,"N","Y","Legitimate public HTTPS treated as HIGH vulnerability; gate blocked (score 50). Also claims azurerm_network_security_rule supports tags (false)."),
 ("TC12",2,38405103514,"workflow_dispatch",N,"CONFIRMED LOW (tag) only",1,1,NA,NA,NA,1,"N","Y","HTTPS exposure correctly not confirmed (destination-scope note as NEEDS_CONTEXT). Confirmed LOW TAG-001 finding is false: network security rules are not taggable."),
 ("TC12",3,38405210047,"workflow_dispatch",N,"No confirmed findings",2,2,NA,NA,NA,2,"N","N","Correctly accepted; correctly states rules are not taggable. Caveat: cites the fixture comment 'Ground truth: public TCP/443 ingress is intentional' — the test file cues the answer."),
+("TC13",1,38409744211,"pull_request",V,"CONFIRMED",2,2,2,2,2,2,"N","N","Contributor at subscription vs Reader-on-RG requirement identified by cross-file reasoning (tc13_requirements.tf); exact remediation (Reader, resource-group scope). No policy mapping."),
+("TC13",2,38409804722,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,2,"N","N","Target and fix correct, but claims Contributor can modify role assignments; Contributor excludes Microsoft.Authorization write/delete actions (NotActions)."),
+("TC13",3,38409830032,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,2,"N","N","Target and fix correct; impact lists 'IAM assignments' among what Contributor can modify — inaccurate (Microsoft.Authorization write excluded)."),
+("TC14",1,38409748586,"pull_request",N,"CONFIRMED LOW (wildcard destination)",1,2,NA,NA,NA,1,"N","Y","Restricted SSH correctly not treated as public exposure, but a hardening suggestion was CONFIRMED at LOW; ground truth TC14-GT-01 says no confirmed finding."),
+("TC14",2,38409813127,"workflow_dispatch",N,"No confirmed findings",2,2,NA,NA,NA,2,"N","N","Accepted; NEEDS_CONTEXT LOW note asking to confirm the address is a managed bastion (hidden from PR comment) — reasonable."),
+("TC14",3,38409838825,"workflow_dispatch",N,"No confirmed findings",2,2,NA,NA,NA,2,"N","N","Accepted; NEEDS_CONTEXT MEDIUM note on bastion ownership plus correct FALSE_POSITIVE dismissals (outbound deny, log quota)."),
+("TC15",1,38409752049,"pull_request",V,"CONFIRMED",2,2,2,2,2,2,"N","N","Hard-coded default password found (scanners missed it). Accurate impact (repository/history exposure); remediation: remove default, sensitive = true, secret store, rotate, purge history."),
+("TC15",2,38409821867,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,2,"N","N","Target and remediation correct; states the default 'will appear in the Terraform state file' — inaccurate for an unreferenced variable (state holds resource attributes, not variable defaults)."),
+("TC15",3,38409847744,"workflow_dispatch",V,"CONFIRMED",2,2,2,2,2,2,"N","N","Target correct; correctly qualifies that values reach state only when consumed by a resource; remediation complete (no default, sensitive, secret store, rotate)."),
 ]
 for i,r in enumerate(runs,2):
     tc,rn,rid,ev,gt,st,D,E,I,R,C,U,pm,nz,just=r
@@ -116,7 +125,7 @@ for j,c in enumerate(["Measure","","","","","","D","E","I","R","C","U","","","Sc
         x=ws.cell(row=hdr_row,column=j,value=c); x.font=H; x.fill=HF
 rng=lambda col:f"{col}$2:{col}${last}"
 GT=rng("$E")
-rows=[("Mean — vulnerable runs (TC02–TC11)",'"Vulnerable"'),("Mean — non-vulnerable runs (TC01, TC12)",'"Not vulnerable"')]
+rows=[("Mean — vulnerable runs (TC02–TC11, TC13, TC15)",'"Vulnerable"'),("Mean — non-vulnerable runs (TC01, TC12, TC14)",'"Not vulnerable"')]
 for k,(lab,crit) in enumerate(rows,hdr_row+1):
     ws.cell(row=k,column=1,value=lab).font=BB
     for col in "GHIJKL":

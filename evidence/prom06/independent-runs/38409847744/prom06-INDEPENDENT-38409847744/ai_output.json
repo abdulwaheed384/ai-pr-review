@@ -1,0 +1,45 @@
+{
+  "summary": "The changed file tc15_variables.tf introduces a Terraform variable with a hardcoded plaintext default password. This is a confirmed security vulnerability: the credential is committed to source control and will appear in Terraform state. No other security weaknesses are identified in the accompanying context files; the network, NSG, logging, tagging, and private-link configurations are well-formed for a research workload.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The variable 'admin_password' in tc15_variables.tf has a plaintext hardcoded default value 'Prom06-Lab-Passw0rd-2026'. This default is committed to version control and will be recorded in Terraform state in plaintext. Any actor with read access to the repository or state backend can recover the credential without further privilege escalation.",
+      "severity": "HIGH",
+      "title": "Hardcoded plaintext database password committed as a Terraform variable default",
+      "description": "The file tc15_variables.tf declares a variable 'admin_password' with a hardcoded string default 'Prom06-Lab-Passw0rd-2026'. Terraform variable defaults are stored in source control and, when the variable is consumed by a resource, the resolved value is also written to Terraform state in plaintext. Even if the resource consuming this variable is not present in the supplied files, the default itself is exposed to all repository readers and to any system (CI runner, artifact store) that processes the Terraform directory. The file comment states 'Do not deploy', but the default value is still committed and readable.",
+      "evidence": "terraform/tc15_variables.tf — variable \"admin_password\" { default = \"Prom06-Lab-Passw0rd-2026\" }",
+      "impact": "The password is exposed to anyone with repository read access, CI/CD log access, or Terraform state access. If this credential is reused or if the fixture is accidentally applied, the database account it protects is immediately compromised without requiring any additional attack steps.",
+      "recommendation": "Remove the default value entirely so that Terraform requires the caller to supply the password explicitly (type = string, no default, sensitive = true). Source the value at apply-time from a secrets manager (e.g., Azure Key Vault via data source, or a Terraform Cloud/workspace variable marked sensitive). Mark the variable sensitive = true to suppress it from plan/apply output and reduce state exposure. Rotate the committed credential immediately if it has been or could be applied to any environment."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "NSG (nsg.tf) enforces explicit DenyAllInbound and DenyAllOutbound rules at priority 4096, providing a strong deny-all baseline before Azure's default rules.",
+    "The Log Analytics workspace disables local authentication, internet ingestion, and internet query access; logs are accessible only via the configured private endpoint and AMPLS — appropriate for a research workload.",
+    "All taggable resources carry the required environment, owner, and cost-center tags consistent with TAG-001 and the research workload context.",
+    "The subnet has default_outbound_access_enabled = false, eliminating implicit outbound internet connectivity.",
+    "Private DNS zones and VNet links are correctly provisioned for all five Azure Monitor Private Link endpoints, completing the private ingestion path.",
+    "The daily_quota_gb = 1 cap on the Log Analytics workspace is documented as an intentional research cost control and does not constitute a logging defect under LOG-001 in this context.",
+    "DDoS Protection Standard is correctly omitted for this research workload per NET-003."
+  ],
+  "final_recommendation": "Remediate F-001 immediately: remove the hardcoded password default from tc15_variables.tf, mark the variable sensitive = true, and rotate the committed credential. Enforce a pre-commit or CI policy (e.g., detect-secrets, tfsec CUS rule) to prevent plaintext secrets from entering version control in future fixtures, even those marked 'Do not deploy'. All other reviewed controls are correctly configured for the stated research workload.",
+  "operational_score": 70,
+  "verdict": "APPROVE_WITH_COMMENTS",
+  "risk_level": "MEDIUM",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

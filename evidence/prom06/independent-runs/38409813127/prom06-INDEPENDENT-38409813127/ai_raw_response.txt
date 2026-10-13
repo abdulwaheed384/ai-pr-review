@@ -1,0 +1,32 @@
+```json
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces a well-structured NSG with a restrictive inbound/outbound posture, a private-only Log Analytics workspace, AMPLS with private endpoint and DNS zones, and NSG diagnostic settings. The subnet association and tagging are confirmed in context files. No confirmed security vulnerabilities or policy violations are found in this change. One low-confidence observation about the SSH source address is retained as context-dependent for traceability.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "The NSG permits inbound SSH (TCP/22) from a single /32 address (203.0.113.10/32) at priority 300, described in a comment as 'the approved bastion address'. Whether this IP is actually a controlled bastion host, a documented jump server, or a general office IP cannot be confirmed from the supplied Terraform alone. If the address is not a managed bastion or is reachable from an untrusted network, the SSH exposure could be a weakness; if it is a dedicated jump host, the rule is appropriate.",
+      "severity": "LOW",
+      "title": "SSH inbound allow rule scope cannot be verified from supplied configuration",
+      "description": "The security rule 'AllowSSHFromBastion' permits TCP/22 inbound from 203.0.113.10/32 to any destination in the subnet. The comment asserts this is an 'approved bastion address', but the supplied files do not define or reference a bastion host resource, and no external documentation confirms the nature or management status of that IP. If this is a personal or uncontrolled IP rather than a hardened bastion, direct SSH access to subnet resources would be exposed.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowSSHFromBastion': source_address_prefix = '203.0.113.10/32', destination_port_range = '22', access = 'Allow', priority = 300. No azurerm_bastion_host or equivalent resource is defined in any supplied file.",
+      "impact": "If the source IP is not a managed, hardened bastion host, administrative SSH access to subnet-attached resources would be exposed to an uncontrolled address. Impact is bounded by the /32 prefix scope and the deny-all baseline at priority 4096.",
+      "recommendation": "Confirm in documentation or Terraform that 203.0.113.10/32 corresponds to a managed Azure Bastion or equivalent controlled jump host. If available, reference an azurerm_bastion_host resource or restrict SSH further to the AzureBastionSubnet service tag. If this is a research-only test address, document its scope and lifecycle."
+    }
+  ],
+  "policy_violations": [],
+  "positives": [
+    "NET-001 satisfied: azurerm_subnet_network_security_group_association.subnet associates the NSG with the subnet in network.tf.",
+    "TAG-001 satisfied: azurerm_network_security_group.nsg, azurerm_log_analytics_workspace.network, azurerm_monitor_private_link_scope.network, azurerm_private_endpoint.monitor, and all private DNS zone resources carry local.common_tags, which includes environment, owner, cost-center, and research_case. Azure subnet resources are documented as non-taggable.",
+    "LOG-001 satisfied: azurerm_monitor_diagnostic_setting.nsg enables both supported NSG diagnostic categories (NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter) and forwards them to the Log Analytics workspace. The policy requires collection and forwarding, not interactive query or alerting.",
+    "SEC-001 satisfied: internet_ingestion_enabled and internet_query_enabled are both false on the Log Analytics workspace; AMPLS is configured with PrivateOnly ingestion and query access modes; a private endpoint with full Azure Monitor DNS zones is provisioned. No public-facing resource is exposed.",
+    "NSG inbound posture is restrictive: only a single /32 SSH rule is permitted; an explicit DenyAllInbound at priority 4096 enforces a documented deny-all baseline before Azure default rules.",
+    "Outbound default access is explicitly disabled at the subnet level (default_outbound_access_enabled = false in network.tf) and reinforced by DenyAllOutbound at NSG priority 4096, providing defense-in-depth for egress.",
+    "local_authentication_enabled = false on the Log Analytics workspace enforces Azure AD-only authentication, eliminating shared-key access.",
+    "NET-003 (DDoS Protection Standard) is correctly not applied: the workload is tagged environment = 'research' and the policy explicitly exempts non-production workloads. The comment in network.tf documents this intent.",
+    "The 1 GB daily_quota_gb on the Log Analytics workspace is documented as a research cost cap. It is an intentional operational tradeoff and does not violate any supplied policy requirement."
+  ],
+  "final_recommendation": "The NSG change demonstrates a strong, policy-compliant security baseline for this research workload: restrictive NSG rules, private-only Log Analytics with AMPLS, full diagnostic coverage, and consistent tagging. The single context-dependent finding (F-001) should be resolved by confirming the nature and management status of the SSH source IP (203.0.113.10/32) in documentation or by referencing a bastion host resource. No mandatory remediation is required before merge for the confirmed policy controls reviewed."
+}
+```

@@ -36,8 +36,7 @@ def row(ws, r, vals, fonts=None, wrap=()):
 # ------------------------------------------------------------------ AI Confirmed Findings
 cf = wb.create_sheet("AI Confirmed Findings")
 cf["A1"] = "Every CONFIRMED AI finding in the independent condition (46 runs, TC01–TC15) with a manual label against ground truth"; cf["A1"].font = TI
-cf["A2"] = ("Source: ai_output.json (TC01–TC12 artefacts) and PR comments #82–#84 (TC13–TC15; only CONFIRMED findings appear in PR comments, "
-            "so these rows are complete for confirmed findings; run IDs for TC13–TC15 assigned by comment timestamp order). "
+cf["A2"] = ("Source: ai_output.json in each run artefact (TC01–TC12 downloaded by AB on 13 Oct; TC13–TC15 downloaded by AB on 13 Oct, 15:50). "
             "Rows with '-' record runs that produced no confirmed finding. Labels (blue) are the researcher-assistant's judgement; see legend.")
 cf["A2"].font = IT; cf["A2"].alignment = WR; cf.merge_cells("A2:I2"); cf.row_dimensions[2].height = 45
 cf["A3"] = "Legend: TARGET = the ground-truth condition; EXTRA-VALID = true issue outside the target; DUPLICATE = restates another confirmed finding in the same run; FALSE = not a real issue against ground truth or provider behaviour; NONE = no confirmed finding in the run."
@@ -72,7 +71,7 @@ cf.freeze_panes = "C6"; cf.auto_filter.ref = f"A5:I{cf_last}"
 ro = wb.create_sheet("AI Run Outcomes")
 ro["A1"] = "AI independent condition — one row per run (46 runs)"; ro["A1"].font = TI
 ro["A2"] = ("Counts (black) are formulas over 'AI Confirmed Findings'. Score/decision: TC01–TC12 linked from 'Independent AI Runs' (green); "
-            "TC13–TC15 typed from PR comments #82–#84 (blue, provisional until artefacts are downloaded).")
+            "TC13–TC15 typed from ai_output.json operational_score and verdict in the run artefacts (blue).")
 ro["A2"].font = IT; ro["A2"].alignment = WR; ro.merge_cells("A2:L2"); ro.row_dimensions[2].height = 30
 hdr(ro, 4, ["TC", "Run", "Run ID", "Case type", "Confirmed findings", "TARGET", "EXTRA-VALID", "DUPLICATE", "FALSE",
             "Target confirmed?", "Operational score", "Decision"], [6, 5, 13, 13, 10, 8, 10, 10, 8, 10, 10, 22])
@@ -83,7 +82,9 @@ for x in rows:
     k = (x["tc"], x["run_no"])
     if k not in seen:
         seen.add(k); runs.append((x["tc"], int(x["run_no"]), x["run_id"]))
-T1315 = {"38409744211": (70, "APPROVE_WITH_COMMENTS"), "38409804722": (70, "APPROVE_WITH_COMMENTS"), "38409830032": (70, "APPROVE_WITH_COMMENTS"),
+import json as _j, glob as _g
+T1315 = {rid: (_j.load(open(_g.glob(f"/home/claude/prom06-independent-evidence/artifacts/indep-artifacts/{rid}/*/ai_output.json")[0]))["operational_score"], _j.load(open(_g.glob(f"/home/claude/prom06-independent-evidence/artifacts/indep-artifacts/{rid}/*/ai_output.json")[0]))["verdict"]) for rid in ["38409744211","38409804722","38409830032","38409748586","38409813127","38409838825","38409752049","38409821867","38409847744"]}
+_OLD_T1315 = {"38409744211": (70, "APPROVE_WITH_COMMENTS"), "38409804722": (70, "APPROVE_WITH_COMMENTS"), "38409830032": (70, "APPROVE_WITH_COMMENTS"),
          "38409748586": (95, "APPROVE"), "38409813127": (100, "APPROVE"), "38409838825": (100, "APPROVE"),
          "38409752049": (70, "APPROVE_WITH_COMMENTS"), "38409821867": (70, "APPROVE_WITH_COMMENTS"), "38409847744": (70, "APPROVE_WITH_COMMENTS")}
 A = f"'AI Confirmed Findings'!$C$6:$C${cf_last}"; G = f"'AI Confirmed Findings'!$G$6:$G${cf_last}"
@@ -207,8 +208,8 @@ rv.cell(row=s + len(lab) + 2, column=1, value=("rem-tc10tags validate error (log
 # ------------------------------------------------------------------ Metrics
 m = wb.create_sheet("Metrics")
 m["A1"] = "Step 3 metrics — detection, false alarms, run consistency, timing and remediation"; m["A1"].font = TI
-m["A2"] = ("Case-level classes for TC01–TC12 are linked from 'Verified Matrix' (green). TC13–TC15 are typed (blue) from local scans and PR comments #82–#84 and are "
-           "PROVISIONAL until the nine artefacts are downloaded and checked. All rates are descriptive for constructed cases (n = 15), not population estimates.")
+m["A2"] = ("Case-level classes for TC01–TC12 are linked from 'Verified Matrix' (green). TC13–TC15 are typed (blue) from local scans and the nine run artefacts (metadata verified: INDEPENDENT, no scanner input). "
+           " All rates are descriptive for constructed cases (n = 15), not population estimates.")
 m["A2"].font = IT; m["A2"].alignment = WR; m.merge_cells("A2:H2"); m.row_dimensions[2].height = 45
 hdr(m, 4, ["TC", "Case type", "Checkov", "tfsec", "Scanner union", "AI independent", "Status", "Note"], [8, 13, 11, 11, 13, 14, 12, 60])
 for i in range(12):
@@ -220,13 +221,13 @@ for i in range(12):
     m.cell(row=r, column=6, value=f"='Verified Matrix'!J{vm}").font = GREEN
     m.cell(row=r, column=7, value="Verified").font = B
 extra = [("TC13", "Vulnerable", "FN", "FN", "TP", "Contributor at subscription vs documented Reader-on-RG need. Checkov 7/0, tfsec 0; AI HIGH 3/3."),
-         ("TC14", "Secure", "TN", "TN", "TN", "Restricted SSH (remediated TC02). AI clean 2/3; LOW wildcard-destination finding 1/3 (counted at run level)."),
+         ("TC14", "Secure", "TN", "TN", "TN", "Restricted SSH (remediated TC02). AI: LOW wildcard-destination finding confirmed in run 1; runs 2–3 clean with NEEDS_CONTEXT bastion notes (hidden from PR comment)."),
          ("TC15", "Vulnerable", "FN", "FN", "TP", "Hard-coded password in variable default. Checkov 7/0 (secrets framework not run), tfsec 0; AI HIGH 3/3.")]
 for k, (tc, ct, c, t, a, note) in enumerate(extra):
     r = 17 + k
     for j, v in ((1, tc), (2, ct), (3, c), (4, t), (6, a)):
         m.cell(row=r, column=j, value=v).font = BLUE
-    m.cell(row=r, column=7, value="Provisional").font = B
+    m.cell(row=r, column=7, value="Verified").font = B
     m.cell(row=r, column=8, value=note).font = B
 m["H5"] = "Secure baseline."; m["H12"] = "Raised 4/4 runs, confirmed 1/4 (PARTIAL)."; m["H13"] = "Only the AI detected it (scanners FN)."
 m["H15"] = "Construct not isolated: CKV_AZURE_39 fires on the wildcard alone."; m["H16"] = "Report both readings (decision D2)."
@@ -270,7 +271,7 @@ def block(top, title, last):
     return top + 2 + len(defs)
 
 end1 = block(22, "A. Case level — TC01–TC12 (verified)", 16)
-end2 = block(end1 + 2, "B. Case level — TC01–TC15 (TC13–TC15 provisional)", 19)
+end2 = block(end1 + 2, "B. Case level — TC01–TC15", 19)
 
 # complementarity
 t = end2 + 2
@@ -292,7 +293,7 @@ m.cell(row=t + 6, column=8, value="TC08 (AI PARTIAL; scanners FN)").font = IT
 
 # run-level AI
 u = t + len(comp) + 2
-m.cell(row=u, column=1, value="D. AI run level — 46 independent runs (TC13–TC15 provisional)").font = TI
+m.cell(row=u, column=1, value="D. AI run level — 46 independent runs").font = TI
 RO = lambda col: f"'AI Run Outcomes'!${col}$5:${col}${ro_last}"
 CFL = f"'AI Confirmed Findings'!$G$6:$G${cf_last}"
 runm = [

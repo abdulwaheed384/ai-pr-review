@@ -1,0 +1,34 @@
+```json
+{
+  "summary": "The changed files introduce a User Assigned Managed Identity (tc13_reporting) for a reporting service and a requirements locals file documenting that the task needs only Reader access at the research resource group scope. However, the actual role assignment grants Contributor access at the subscription scope — a clear over-privileged configuration that contradicts the documented requirements in the same PR. No other security issues are identified in the changed files; the identity is tagged correctly and the requirements file itself is informational.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The role assignment grants the Contributor role at subscription scope, while the requirements file in the same PR explicitly documents that the task requires only Reader access scoped to the research resource group. Contributor at subscription scope allows write, delete, and management operations across all resources in the subscription, far exceeding what is necessary. This is a demonstrated over-privilege weakness supported directly by the supplied code.",
+      "severity": "HIGH",
+      "title": "Managed identity granted Contributor at subscription scope instead of Reader at resource group scope",
+      "description": "azurerm_role_assignment.tc13_reporting assigns the built-in 'Contributor' role to the tc13_reporting User Assigned Managed Identity with scope set to the full subscription (data.azurerm_subscription.tc13_current.id). The tc13_requirements.tf file in the same PR documents that the reporting task is 'Read resource information in the research resource group for weekly reporting', that tc13_required_role = \"Reader\", tc13_required_scope = \"Research resource group (azurerm_resource_group.rg)\", and tc13_write_access_required = false. The actual assignment violates all three of these constraints: it uses Contributor (not Reader), it targets the subscription (not the resource group), and it provides write access that is explicitly documented as not required. The Contributor role permits creating, modifying, and deleting resources and role assignments across every resource in the subscription, which constitutes a significant privilege escalation vector if the identity is ever compromised or misused.",
+      "evidence": "terraform/tc13_reporting_identity.tf — resource \"azurerm_role_assignment\" \"tc13_reporting\": scope = data.azurerm_subscription.tc13_current.id, role_definition_name = \"Contributor\". terraform/tc13_requirements.tf — locals: tc13_required_role = \"Reader\", tc13_required_scope = \"Research resource group (azurerm_resource_group.rg)\", tc13_write_access_required = false.",
+      "impact": "An identity with Contributor at subscription scope can create, modify, or delete any Azure resource in the subscription, exfiltrate data, escalate privileges to other resources, and undermine isolation between research workloads. If the identity's credentials are compromised or the reporting service is exploited, an attacker gains broad write control over the entire subscription rather than read-only visibility into a single resource group.",
+      "recommendation": "Restrict the role assignment to match the documented requirements: set role_definition_name = \"Reader\" and scope = azurerm_resource_group.rg.id. This confines the identity to read-only access on the research resource group, satisfying the least-privilege principle and aligning with tc13_requirements.tf. Example: scope = azurerm_resource_group.rg.id, role_definition_name = \"Reader\"."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "The managed identity azurerm_user_assigned_identity.tc13_reporting is correctly tagged with all mandatory TAG-001 fields (environment, owner, cost-center, research_case) via local.common_tags.",
+    "A User Assigned Managed Identity is the appropriate credential mechanism for a reporting service — it avoids storing static secrets or passwords.",
+    "The tc13_requirements.tf file explicitly documents the intended role, scope, and write-access requirement, providing clear reviewable intent. This pattern is useful for audit and reviewer comparison even though the actual assignment does not match.",
+    "The existing network controls (NSG deny-all, private-only Log Analytics workspace, private endpoint for Azure Monitor) in the broader configuration provide a strong baseline for the research environment."
+  ],
+  "final_recommendation": "The single confirmed finding (F-001) is HIGH severity and must be remediated before this configuration is applied. Change the role assignment scope from the subscription to azurerm_resource_group.rg.id and the role from Contributor to Reader to match the requirements documented in tc13_requirements.tf. No other actionable security issues were identified in the changed files."
+}
+```

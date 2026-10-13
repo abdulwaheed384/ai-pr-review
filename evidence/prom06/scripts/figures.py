@@ -61,7 +61,7 @@ for i, (tc, nm, ct, ck, tf, ai_txt, ai, hy) in enumerate(rows):
         ax.add_patch(plt.Rectangle((j + 0.03, y + 0.06), 0.94, 0.88, color=COL[cls], linewidth=0))
         ax.text(j + 0.5, y + 0.5, txt, ha="center", va="center", fontsize=7.8, linespacing=1.1,
                 color="white" if cls == "FN" else INK, fontweight="bold" if cls in ("TP", "FN") else "normal")
-    lab = f"{tc}{' †' if tc in ('TC13', 'TC14', 'TC15') else ''}  {nm}"
+    lab = f"{tc}  {nm}"
     ax.text(-0.08, y + 0.5, lab, ha="right", va="center", fontsize=9, color=INK)
     ax.text(4.08, y + 0.5, ct, ha="left", va="center", fontsize=8, color=INK2)
 for j, c in enumerate(cols):
@@ -72,7 +72,7 @@ leg = [Patch(color=GOOD, label="Correct (TP / TN)"), Patch(color=CRIT, label="Mi
        Patch(color=WARN, label="Partial (raised, not consistently confirmed)"), Patch(color=SER, label="Context-dependent"),
        Patch(color=NEUT, label="Unverified / not run")]
 ax.legend(handles=leg, loc="upper center", bbox_to_anchor=(0.5, 0.115), ncol=3, frameon=False, fontsize=8.5)
-ax.text(-2.5, -2.85, "† TC13–TC15 provisional (PR comments; artefacts pending). AI independent cells: case class, then runs confirming the target\n"
+ax.text(-2.5, -2.85, "AI independent cells: case class, then runs confirming the target\n"
         "(vulnerable) or runs with no confirmed finding (non-vulnerable). Scanner rules normalised to one detection per case.", fontsize=7.5, color=INK2, va="bottom")
 save(fig, "fig_detection_matrix")
 
@@ -87,7 +87,7 @@ fig, ax = plt.subplots(figsize=(7.2, 3.6))
 import numpy as np
 x = np.arange(len(tools)); w = 0.36
 b1 = ax.bar(x - w / 2 - 0.01, a, w, color=S1, label="TC01–TC12, verified (10 vulnerable cases)")
-b2 = ax.bar(x + w / 2 + 0.01, b, w, color=S2, label="TC01–TC15, incl. provisional TC13–TC15 (12 vulnerable)")
+b2 = ax.bar(x + w / 2 + 0.01, b, w, color=S2, label="TC01–TC15 (12 vulnerable cases)")
 for bars in (b1, b2):
     for r_ in bars:
         ax.text(r_.get_x() + r_.get_width() / 2, r_.get_height() + 0.02, f"{r_.get_height():.0%}", ha="center", va="bottom", fontsize=8.5, color=INK)
@@ -109,7 +109,7 @@ ax.barh(yy, vals, height=0.55, color=S1)
 for y_, v in zip(yy, vals):
     ax.text(v + 0.03, y_, f"{v:.2f}", va="center", fontsize=8.5, color=INK)
 ax.set_yticks(yy, dims); ax.set_xlim(0, 2.2); ax.set_xticks([0, 0.5, 1, 1.5, 2])
-ax.set_xlabel("Mean score (0–2), 31 independent runs on vulnerable cases TC02–TC11"); clean(ax, "x")
+ax.set_xlabel("Mean score (0–2), 37 independent runs on vulnerable cases (TC02–TC11, TC13, TC15)"); clean(ax, "x")
 ax.text(0, -0.36, "Scored by the AI research assistant against predefined operational rules; inter-rater check by the researcher pending.",
         transform=ax.transAxes, fontsize=7.5, color=INK2)
 save(fig, "fig_ai_quality")
