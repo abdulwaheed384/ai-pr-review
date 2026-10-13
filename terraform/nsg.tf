@@ -137,3 +137,18 @@ resource "azurerm_private_dns_zone_virtual_network_link" "monitor" {
   registration_enabled  = false
   tags                  = local.common_tags
 }
+
+# AI remediation (TC08): forward NSG logs to Log Analytics.
+resource "azurerm_monitor_diagnostic_setting" "nsg" {
+  name                       = "diag-nsg-demo-ai"
+  target_resource_id         = azurerm_network_security_group.nsg.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.network.id
+
+  enabled_log {
+    category = "NetworkSecurityGroupEvent"
+  }
+
+  enabled_log {
+    category = "NetworkSecurityGroupRuleCounter"
+  }
+}
