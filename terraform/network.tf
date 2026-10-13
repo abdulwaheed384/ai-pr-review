@@ -8,7 +8,7 @@ resource "azurerm_resource_group" "rg" {
 resource "azurerm_virtual_network" "vnet" {
   name          = "vnet-demo-ai"
   address_space = ["10.0.0.0/16"]
-  dns_servers   = [] # Custom resolver; it must be reachable from this VNet.
+  dns_servers   = ["8.8.8.8"] # TC06: Deliberately use a public DNS resolver for testing.
   # NET-003 requires DDoS Protection Standard for production; TC01 is research.
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
