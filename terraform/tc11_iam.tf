@@ -9,11 +9,11 @@ resource "azurerm_role_definition" "tc11_reporting_role" {
   description = "TC11 test role: permissions exceed the documented reporting task."
 
   permissions {
-    actions     = ["*"]
+    actions     = ["Microsoft.Resources/subscriptions/resourceGroups/read", "Microsoft.Resources/subscriptions/resources/read"]
     not_actions = []
   }
 
   assignable_scopes = [
-    data.azurerm_subscription.tc11_current.id
+    azurerm_resource_group.rg.id
   ]
 }
