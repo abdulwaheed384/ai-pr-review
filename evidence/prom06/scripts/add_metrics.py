@@ -172,7 +172,7 @@ REM = [
  ("TC08", "a", "Run 38405218950 F-001", "Add azurerm_monitor_diagnostic_setting for the NSG with both categories", "Only run that confirmed the target; code example applied as given.", "rem-tc08", "324f05c", 91, "38412942226", "Pass", "7/0 before and after (blind)", "0 → 0", "100 APPROVE — no confirmed findings", "Yes", "n/a (blind)", "Yes"),
  ("TC09", "a", "Run 38404607277 F-001", "Remove the locals block containing the dummy secret", "AI option 'remove the locals block'. Value remains in git history (not recommended for purge in this run).", "rem-tc09", "a3323f5", 92, "38412949170", "Pass", "7/0 before and after (blind; secrets framework not run)", "0 → 0", "100 APPROVE — no confirmed findings", "Yes (code); history not addressed", "n/a (blind)", "Yes"),
  ("TC10", "a", "Run 38404612132 F-001", "Delete the role definition", "First AI option. Second option ('minimum set of actions') could not be applied: the AI did not specify the actions.", "rem-tc10", "46226ce", 93, "38412950863", "Pass", "CKV_AZURE_39 failed → passed", "0 → 0", "Not invoked: PR has no .tf diff against main after deletion", "Yes", "Yes (Checkov)", "n/a"),
- ("TC10", "tags", "Run 38404612132 F-002 (FALSE finding)", "Add tags = local.common_tags to azurerm_role_definition", "Applied verbatim to test the false tag finding.", "rem-tc10tags", "7c47e50", 94, "38412955313", "FAIL (Terraform Validate step failed; later steps skipped)", "Skipped", "Skipped", "Skipped", "n/a — fix is invalid Terraform", "n/a", "n/a"),
+ ("TC10", "tags", "Run 38404612132 F-002 (FALSE finding)", "Add tags = local.common_tags to azurerm_role_definition", "Applied verbatim to test the false tag finding.", "rem-tc10tags", "7c47e50", 94, "38412955313", "FAIL — Unsupported argument: \"tags\" not expected on azurerm_role_definition (later steps skipped)", "Skipped", "Skipped", "Skipped", "n/a — fix is invalid Terraform", "n/a", "n/a"),
  ("TC11", "a", "Run 38404613836 F-001", "actions → the two documented read actions; assignable_scopes → resource group", "Matches tc11_required_actions exactly.", "rem-tc11", "2e55a55", 95, "38412957421", "Pass", "CKV_AZURE_39 failed → passed (8/0)", "0 → 0", "100 APPROVE — no confirmed findings", "Yes", "Yes (Checkov)", "Yes"),
  ("TC13", "a", "Run 38409744211 F-001", "role Contributor → Reader; scope subscription → resource group", "Applied as given.", "rem-tc13", "3748898", 96, "38412963217", "Pass", "7/0 before and after (blind)", "0 → 0", "100 APPROVE — no confirmed findings", "Yes", "n/a (blind)", "Yes"),
  ("TC15", "a", "Run 38409752049 F-001", "Remove default; add sensitive = true", "Rotation and history purge are operational steps outside code; not tested.", "rem-tc15", "30a6cf7", 97, "38412968077", "Pass", "7/0 before and after (blind)", "0 → 0", "95 APPROVE — LOW: no validation block / no confirmed secret store", "Yes (code)", "n/a (blind)", "Yes (LOW note)"),
@@ -201,8 +201,8 @@ lab = [
 for k, (l, f) in enumerate(lab, s + 1):
     rv.cell(row=k, column=1, value=l).font = BB; rv.merge_cells(start_row=k, start_column=1, end_row=k, end_column=5)
     rv.cell(row=k, column=6, value=f).font = B
-rv.cell(row=s + len(lab) + 2, column=1, value=("To do (AB): fetch the validate error text with  gh run view 38412955313 -R abdulwaheed384/ai-pr-review --log-failed  "
-        "(log download is blocked for the assistant). Expected: unsupported 'tags' argument on azurerm_role_definition — not yet seen.")).font = IT
+rv.cell(row=s + len(lab) + 2, column=1, value=("rem-tc10tags validate error (log supplied by AB, 13 Oct 2026; archived at step3/rem-logs/38412955313-terraform-validate.txt): "
+        "Error: Unsupported argument on tc10_iam.tf line 14 — An argument named \"tags\" is not expected here.")).font = IT
 
 # ------------------------------------------------------------------ Metrics
 m = wb.create_sheet("Metrics")

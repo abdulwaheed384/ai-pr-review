@@ -1,0 +1,10 @@
+Source: gh run view 38412955313 -R abdulwaheed384/ai-pr-review --log-failed (run by AB, 13 Oct 2026; ANSI colour codes removed)
+Run: PR #94, branch rem-tc10tags, commit 7c47e500ac86486e4fd5efd15f682b9b5bbc9406, EXPERIMENT_CONDITION INDEPENDENT
+
+review  Terraform Validate      2026-10-13T14:23:52.0657545Z Run terraform -chdir=terraform validate
+review  Terraform Validate      2026-10-13T14:23:52.8578410Z │ Error: Unsupported argument
+review  Terraform Validate      2026-10-13T14:23:52.8579967Z │   on tc10_iam.tf line 14, in resource "azurerm_role_definition" "tc10_excessive_permissions":
+review  Terraform Validate      2026-10-13T14:23:52.8581010Z │   14:   tags = local.common_tags
+review  Terraform Validate      2026-10-13T14:23:52.8582667Z │ An argument named "tags" is not expected here.
+review  Terraform Validate      2026-10-13T14:23:52.8654821Z ##[error]Terraform exited with code 1.
+review  Terraform Validate      2026-10-13T14:23:52.8709791Z ##[error]Process completed with exit code 1.
