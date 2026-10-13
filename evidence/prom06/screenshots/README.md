@@ -11,4 +11,8 @@
 | PR98.pdf | S6 | REM-TC02b: comment corrected; AI LOW only (95, APPROVE) |
 
 Every page footer carries the URL and the print timestamp. Content was cross-checked against the PR comments retrieved through the API (step3/rem-pr-comments, pr-comments/independent).
-Still outstanding: S3 (run 38404605125), S8 (run summary with artefact) and, optionally, S7 (run 38412955313).
+| S3_run38404605125.pdf | S3 | TC08 run 1 (PR #77) job page: "Run independent AI review" failed with "AI review failed: Policy mapping 1 must refer to a matching finding"; env shows EXPERIMENT_CONDITION INDEPENDENT, commit c86e4d5 |
+| S7_run38412955313.pdf | S7 | REM-TC10tags job page: Terraform Validate "Error: Unsupported argument … An argument named "tags" is not expected here" (tc10_iam.tf line 14); later steps skipped |
+| S8a_run38404584887_job_steps.pdf | S8 (partial) | TC02 run 1 job page: all steps with durations, INDEPENDENT. The run Summary page with the Artifacts list is still to be captured |
+
+Captured 13 Oct 2026, 18:28–18:29 BST.
