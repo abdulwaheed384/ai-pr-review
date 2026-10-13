@@ -10,8 +10,8 @@ resource "azurerm_user_assigned_identity" "tc13_reporting" {
 }
 
 resource "azurerm_role_assignment" "tc13_reporting" {
-  scope                = data.azurerm_subscription.tc13_current.id
-  role_definition_name = "Contributor"
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Reader"
   principal_id         = azurerm_user_assigned_identity.tc13_reporting.principal_id
   principal_type       = "ServicePrincipal"
   description          = "Role assignment for the reporting service identity."
