@@ -7,7 +7,7 @@ resource "azurerm_network_security_group" "nsg" {
   # Priority 4096 runs before Azure's default allow rules (65000/65001) and
   # default deny (65500), preserving an explicit deny-all baseline.
 
-  # TC02: Deliberately unrestricted SSH access
+  # TC02 remediated: SSH restricted to the approved administration address.
   security_rule {
     name                       = "AllowSSH"
     priority                   = 300
