@@ -143,7 +143,7 @@ for y_, (_, v) in zip(yy, items):
     ax.text(v + 0.15, y_, f"{v} of {n}", va="center", fontsize=8.5, color=INK)
 ax.set_yticks(yy, [l for l, _ in items]); ax.set_xlim(0, n + 2.5); ax.set_xlabel(f"AI-recommended fixes applied (n = {n}; one run each)")
 clean(ax, "x")
-fig.text(0.01, -0.08, f"Scanner confirmation impossible for {get(4)} cases the scanners never detected. AI rejected 2 fixes (TC02, TC03) while stale\n"
+fig.text(0.01, -0.2, f"Scanner confirmation impossible for {get(4)} cases the scanners never detected. AI rejected 2 fixes (TC02, TC03) while stale\n"
         "'deliberately unrestricted' comments remained; it accepted both once only the comment was corrected. TC10 deletion not re-reviewed by the AI.",
         fontsize=7.5, color=INK2)
 save(fig, "fig_remediation")

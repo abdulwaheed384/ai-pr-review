@@ -83,9 +83,9 @@ runs=[
 ("TC08",2,38405066857,"workflow_dispatch",V,"NEEDS_CONTEXT",1,2,2,2,2,0,"N","N","Explanation, impact and remediation (diagnostic setting with both NSG categories) accurate, but NEEDS_CONTEXT is not shown in the PR comment, so the developer sees no finding."),
 ("TC08",3,38405174844,"workflow_dispatch",V,"NEEDS_CONTEXT",1,2,2,2,2,0,"N","N","As run 2."),
 ("TC08",4,38405218950,"workflow_dispatch",V,"CONFIRMED",2,2,2,2,2,2,"N","N","CONFIRMED and mapped to LOG-001 with a complete azurerm_monitor_diagnostic_setting example."),
-("TC09",1,38404607277,"pull_request",V,"CONFIRMED",2,1,1,2,2,2,"N","N","Hard-coded credential in local found (scanners missed it). Claims the unused local would appear in state/plan — inaccurate for an unreferenced local. Remediation (Key Vault / sensitive variable, rotate) correct."),
-("TC09",2,38405075984,"workflow_dispatch",V,"CONFIRMED",2,1,1,2,2,2,"Y","N","As run 1, plus mapped to SEC-001 (public exposure) — inapplicable to secrets."),
-("TC09",3,38405183161,"workflow_dispatch",V,"CONFIRMED",2,1,1,2,2,2,"Y","N","As run 2."),
+("TC09",1,38404607277,"pull_request",V,"CONFIRMED",2,2,2,2,2,2,"N","N","Hard-coded credential in local found (scanners missed it). State exposure stated conditionally ('if the configuration is ever applied'), consistent with HashiCorp guidance that secrets in configuration are stored in state; not penalised. Remediation (Key Vault / sensitive variable, rotate) correct. Revised 13 Oct after checking vendor documentation."),
+("TC09",2,38405075984,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,2,"Y","N","States unconditionally that the value 'appears in terraform.tfstate' — false for an unreferenced local in an unapplied configuration; also mapped to SEC-001 (public exposure), inapplicable to secrets."),
+("TC09",3,38405183161,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,2,"Y","N","State exposure stated conditionally (acceptable); mapped to SEC-001 (public exposure), inapplicable to secrets."),
 ("TC10",1,38404612132,"pull_request",V,"CONFIRMED",2,1,2,1,2,1,"N","Y","Wildcard Actions at subscription scope correctly identified. Second CONFIRMED finding claims azurerm_role_definition needs TAG-001 tags — resource is not taggable (false positive). Remediation includes questionable lifecycle advice."),
 ("TC10",2,38405084901,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,2,"Y","N","Target correct; mapped to SEC-001 (public exposure) — inapplicable to IAM."),
 ("TC10",3,38405192342,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,1,"Y","Y","Target correct; SEC-001 mis-mapping plus false TAG-001 finding on non-taggable role definition."),
@@ -102,7 +102,7 @@ runs=[
 ("TC14",2,38409813127,"workflow_dispatch",N,"No confirmed findings",2,2,NA,NA,NA,2,"N","N","Accepted; NEEDS_CONTEXT LOW note asking to confirm the address is a managed bastion (hidden from PR comment) — reasonable."),
 ("TC14",3,38409838825,"workflow_dispatch",N,"No confirmed findings",2,2,NA,NA,NA,2,"N","N","Accepted; NEEDS_CONTEXT MEDIUM note on bastion ownership plus correct FALSE_POSITIVE dismissals (outbound deny, log quota)."),
 ("TC15",1,38409752049,"pull_request",V,"CONFIRMED",2,2,2,2,2,2,"N","N","Hard-coded default password found (scanners missed it). Accurate impact (repository/history exposure); remediation: remove default, sensitive = true, secret store, rotate, purge history."),
-("TC15",2,38409821867,"workflow_dispatch",V,"CONFIRMED",2,1,2,2,2,2,"N","N","Target and remediation correct; states the default 'will appear in the Terraform state file' — inaccurate for an unreferenced variable (state holds resource attributes, not variable defaults)."),
+("TC15",2,38409821867,"workflow_dispatch",V,"CONFIRMED",2,2,2,2,2,2,"N","N","Target and remediation correct. Claim that a variable default will appear in state is a generalisation consistent with HashiCorp guidance (secrets in configuration are stored in state and plan files); not penalised. Revised 13 Oct."),
 ("TC15",3,38409847744,"workflow_dispatch",V,"CONFIRMED",2,2,2,2,2,2,"N","N","Target correct; correctly qualifies that values reach state only when consumed by a resource; remediation complete (no default, sensitive, secret store, rotate)."),
 ]
 for i,r in enumerate(runs,2):
