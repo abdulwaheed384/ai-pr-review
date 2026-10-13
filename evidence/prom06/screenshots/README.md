@@ -16,3 +16,6 @@ Every page footer carries the URL and the print timestamp. Content was cross-che
 | S8a_run38404584887_job_steps.pdf | S8 (partial) | TC02 run 1 job page: all steps with durations, INDEPENDENT. The run Summary page with the Artifacts list is still to be captured |
 
 Captured 13 Oct 2026, 18:28–18:29 BST.
+
+## Integrity check (13 Oct 2026, 18:31)
+AB re-downloaded artefact prom06-INDEPENDENT-38404584887 from the run page instead of capturing the Summary page. All 14 files are byte-identical to the copy downloaded earlier in the day (independent-runs/38404584887). This confirms that the archived artefacts are unchanged GitHub outputs. It replaces the need for the S8 Summary capture.
