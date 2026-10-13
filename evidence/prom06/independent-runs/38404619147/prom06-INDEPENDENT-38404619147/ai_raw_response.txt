@@ -1,0 +1,70 @@
+```json
+{
+  "summary": "The changed file tc12_https.tf adds an NSG rule (priority 300) that allows inbound TCP/443 from any source to any destination within the NSG. The rule is documented as an intentional test fixture for a public HTTPS endpoint (TC12). The rule takes effect before the DenyAllInbound rule at priority 4096, opening public HTTPS ingress. One confirmed finding is raised: the rule exposes any resource in the associated subnet to public inbound HTTPS traffic without a scoped destination, and the file header states 'Do not deploy' — creating a tension between the rule's documented intent and its presence in a deployable Terraform configuration. A TAG-001 policy gap is also confirmed: azurerm_network_security_rule does not inherit NSG tags and does not carry its own tag block. All other controls (NSG association, diagnostics, private logging path) are unchanged and remain intact.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The Terraform code directly demonstrates that a priority-300 Allow rule for inbound TCP/443 from source '*' to destination '*' is added to the NSG that is associated with subnet-demo (azurerm_subnet_network_security_group_association.subnet in network.tf). Priority 300 is evaluated before the DenyAllInbound rule at priority 4096, so the rule is effective and opens public HTTPS ingress to all subnet resources. The file comment 'Research-only test fixture. Do not deploy.' directly contradicts inclusion in the deployable Terraform configuration; if applied, it constitutes an unscopable public exposure of all resources in the subnet.",
+      "severity": "HIGH",
+      "title": "NSG rule permits unrestricted public inbound HTTPS to the entire subnet",
+      "description": "azurerm_network_security_rule.tc12_public_https sets source_address_prefix = '*' and destination_address_prefix = '*' with destination_port_range = '443', direction = 'Inbound', access = 'Allow', and priority = 300. Because the associated NSG (nsg-demo-ai) is bound to subnet-demo via azurerm_subnet_network_security_group_association.subnet, this rule permits any internet source to reach TCP/443 on any resource deployed into that subnet. Priority 300 is evaluated before the DenyAllInbound rule at priority 4096, making the rule immediately effective. The file header states 'Do not deploy', but no Terraform mechanism (e.g., count = 0, a feature flag, or workspace scoping) prevents the rule from being applied; it will be created on 'terraform apply'.",
+      "evidence": "terraform/tc12_https.tf: resource azurerm_network_security_rule.tc12_public_https — priority = 300, direction = 'Inbound', access = 'Allow', protocol = 'Tcp', destination_port_range = '443', source_address_prefix = '*', destination_address_prefix = '*', network_security_group_name = azurerm_network_security_group.nsg.name. terraform/network.tf: azurerm_subnet_network_security_group_association.subnet associates the same NSG with subnet-demo. terraform/nsg.tf: DenyAllInbound is at priority 4096, evaluated after this rule.",
+      "impact": "Any resource deployed into subnet-demo (10.0.1.0/24) is reachable on TCP/443 from any internet source while this rule is present. The intended deny-all inbound baseline is bypassed for HTTPS traffic. The 'Do not deploy' comment provides no technical guard against accidental application.",
+      "recommendation": "If this rule is genuinely a test fixture that must not be deployed, protect it with a Terraform conditional (e.g., count = var.enable_tc12 ? 1 : 0 defaulting to 0, or a separate test workspace). If public HTTPS is required for a specific resource, restrict destination_address_prefix to the explicit private IP of that resource rather than '*', and ensure the decision to expose the resource publicly is reviewed and approved before deployment."
+    },
+    {
+      "id": "F-002",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy SEC-001 states no resource should be publicly exposed unless explicitly required and justified. The file comment documents the intent ('public HTTPS is required for the intended public web endpoint') but uses destination_address_prefix = '*', which exposes the entire subnet rather than a specific resource. The justification provided scopes to a single endpoint; the implemented rule scope is broader than that justification supports, making this a policy violation even accepting that some public HTTPS exposure is intended.",
+      "severity": "MEDIUM",
+      "title": "SEC-001: Public exposure broader than documented justification",
+      "description": "SEC-001 permits public exposure only when explicitly required and justified. The rule description references 'the intended public web endpoint' (singular), implying a specific resource. However, destination_address_prefix = '*' applies the allow rule to every resource in the subnet, not just the documented endpoint. The scope of exposure is not bounded to the justified resource.",
+      "evidence": "terraform/tc12_https.tf: azurerm_network_security_rule.tc12_public_https — destination_address_prefix = '*'; description = 'TC12 test: public HTTPS is required for the intended public web endpoint.' Policy ai/policy.md SEC-001: 'No resource should be publicly exposed unless explicitly required and justified.'",
+      "impact": "Any future resource deployed into subnet-demo inherits public HTTPS exposure without an additional explicit justification or rule change, violating the principle that public exposure must be scoped to the justified resource.",
+      "recommendation": "Set destination_address_prefix to the specific private IP address of the intended public web endpoint resource. If no specific resource IP is known at rule-definition time, use an Application Security Group or document the scope gap and obtain explicit approval before merging."
+    },
+    {
+      "id": "F-003",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "TAG-001 requires all taggable Azure resources to include the mandatory tags (environment, owner, cost-center). The azurerm_network_security_rule resource type supports tags in the AzureRM provider v4 via a tags argument. The resource block in tc12_https.tf does not include a tags block. No other file supplies tags for this resource.",
+      "severity": "LOW",
+      "title": "TAG-001: azurerm_network_security_rule.tc12_public_https missing mandatory tags",
+      "description": "The newly added azurerm_network_security_rule.tc12_public_https does not include a tags argument. Policy TAG-001 requires environment, owner, and cost-center tags on all taggable Azure resources. The AzureRM provider v4 azurerm_network_security_rule resource supports a tags block. The parent NSG (azurerm_network_security_group.nsg) carries local.common_tags, but tags are not inherited by the standalone rule resource.",
+      "evidence": "terraform/tc12_https.tf: resource azurerm_network_security_rule.tc12_public_https — no tags argument present. terraform/nsg.tf: azurerm_network_security_group.nsg includes tags = local.common_tags. ai/policy.md TAG-001: 'All taggable Azure resources must include mandatory tags: environment, owner, cost-center.'",
+      "impact": "The rule resource is untagged, violating TAG-001 and reducing cost attribution and ownership traceability for this test case.",
+      "recommendation": "Add tags = local.common_tags (or equivalent research tags) to the azurerm_network_security_rule.tc12_public_https resource block."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No Unjustified Public Exposure",
+      "severity": "HIGH"
+    },
+    {
+      "finding_id": "F-002",
+      "policy_id": "SEC-001",
+      "policy_name": "No Unjustified Public Exposure",
+      "severity": "MEDIUM"
+    },
+    {
+      "finding_id": "F-003",
+      "policy_id": "TAG-001",
+      "policy_name": "Mandatory Resource Tags",
+      "severity": "LOW"
+    }
+  ],
+  "positives": [
+    "The DenyAllInbound rule at priority 4096 in nsg.tf remains unchanged and continues to provide an explicit deny baseline for all other inbound traffic not matched by higher-priority rules.",
+    "The rule description accurately records the TC12 intent, and the file header explicitly marks the fixture as research-only, demonstrating awareness of deployment risk even though no technical guard is present.",
+    "All existing logging, private endpoint, AMPLS, DNS, and diagnostic settings from nsg.tf and network.tf are unaffected by this change and continue to meet LOG-001 and NET-001 requirements.",
+    "default_outbound_access_enabled = false on subnet-demo and the DenyAllOutbound rule at priority 4096 continue to prevent unintended outbound traffic from newly deployed resources."
+  ],
+  "final_recommendation": "Do not merge tc12_https.tf in its current form into a branch whose Terraform state targets a shared or persistent environment. Three issues require remediation before merge: (1) add a technical deployment guard (feature flag variable defaulting to 0, or a dedicated test workspace) so the rule cannot be accidentally applied — the 'Do not deploy' comment is not enforceable; (2) narrow destination_address_prefix from '*' to the specific private IP of the intended endpoint to satisfy SEC-001's scoping requirement; (3) add tags = local.common_tags to satisfy TAG-001. If this file is intended exclusively as a scanner/AI test case and will never be applied, consider moving it outside the main terraform/ directory or using a .tf.disabled extension to prevent Terraform from processing it."
+}
+```

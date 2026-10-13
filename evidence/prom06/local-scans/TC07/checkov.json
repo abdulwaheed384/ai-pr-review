@@ -1,0 +1,2808 @@
+{
+    "check_type": "terraform",
+    "results": {
+        "passed_checks": [
+            {
+                "check_id": "CKV_AZURE_183",
+                "bc_check_id": null,
+                "check_name": "Ensure that VNET uses local DNS addresses",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        8,
+                        "resource \"azurerm_virtual_network\" \"vnet\" {\n"
+                    ],
+                    [
+                        9,
+                        "  name          = \"vnet-demo-ai\"\n"
+                    ],
+                    [
+                        10,
+                        "  address_space = [\"10.0.0.0/16\"]\n"
+                    ],
+                    [
+                        11,
+                        "  dns_servers   = [] # Custom resolver; it must be reachable from this VNet.\n"
+                    ],
+                    [
+                        12,
+                        "  # NET-003 requires DDoS Protection Standard for production; TC01 is research.\n"
+                    ],
+                    [
+                        13,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        14,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        15,
+                        "  tags                = local.common_tags\n"
+                    ],
+                    [
+                        16,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/network.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                "repo_file_path": "/terraform/network.tf",
+                "file_line_range": [
+                    8,
+                    16
+                ],
+                "resource": "azurerm_virtual_network.vnet",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.VnetLocalDNS",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "cost-center": "PROM06-RESEARCH",
+                    "environment": "research",
+                    "owner": "PROM06 Research Team",
+                    "research_case": "PROM06-TC01"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                "breadcrumbs": {
+                    "tags": [
+                        {
+                            "type": "locals",
+                            "name": "common_tags",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/main.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_182",
+                "bc_check_id": null,
+                "check_name": "Ensure that VNET has at least 2 connected DNS Endpoints",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        8,
+                        "resource \"azurerm_virtual_network\" \"vnet\" {\n"
+                    ],
+                    [
+                        9,
+                        "  name          = \"vnet-demo-ai\"\n"
+                    ],
+                    [
+                        10,
+                        "  address_space = [\"10.0.0.0/16\"]\n"
+                    ],
+                    [
+                        11,
+                        "  dns_servers   = [] # Custom resolver; it must be reachable from this VNet.\n"
+                    ],
+                    [
+                        12,
+                        "  # NET-003 requires DDoS Protection Standard for production; TC01 is research.\n"
+                    ],
+                    [
+                        13,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        14,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        15,
+                        "  tags                = local.common_tags\n"
+                    ],
+                    [
+                        16,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/network.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                "repo_file_path": "/terraform/network.tf",
+                "file_line_range": [
+                    8,
+                    16
+                ],
+                "resource": "azurerm_virtual_network.vnet",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.VnetSingleDNSServer",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "cost-center": "PROM06-RESEARCH",
+                    "environment": "research",
+                    "owner": "PROM06 Research Team",
+                    "research_case": "PROM06-TC01"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                "breadcrumbs": {
+                    "tags": [
+                        {
+                            "type": "locals",
+                            "name": "common_tags",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/main.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_160",
+                "bc_check_id": null,
+                "check_name": "Ensure that HTTP (port 80) access is restricted from the internet",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": [
+                        "security_rule"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "  tags                = local.common_tags\n"
+                    ],
+                    [
+                        6,
+                        "\n"
+                    ],
+                    [
+                        7,
+                        "  # Priority 4096 runs before Azure's default allow rules (65000/65001) and\n"
+                    ],
+                    [
+                        8,
+                        "  # default deny (65500), preserving an explicit deny-all baseline.\n"
+                    ],
+                    [
+                        9,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        10,
+                        "    name                       = \"DenyAllInbound\"\n"
+                    ],
+                    [
+                        11,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        12,
+                        "    direction                  = \"Inbound\"\n"
+                    ],
+                    [
+                        13,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        14,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        15,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        16,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        17,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        18,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        19,
+                        "  }\n"
+                    ],
+                    [
+                        20,
+                        "\n"
+                    ],
+                    [
+                        21,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        22,
+                        "    name                       = \"DenyAllOutbound\"\n"
+                    ],
+                    [
+                        23,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        24,
+                        "    direction                  = \"Outbound\"\n"
+                    ],
+                    [
+                        25,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        26,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        27,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        28,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        29,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        30,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        31,
+                        "  }\n"
+                    ],
+                    [
+                        32,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    32
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleHTTPAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "cost-center": "PROM06-RESEARCH",
+                    "environment": "research",
+                    "owner": "PROM06 Research Team",
+                    "research_case": "PROM06-TC01"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "tags": [
+                        {
+                            "type": "locals",
+                            "name": "common_tags",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/main.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_9",
+                "bc_check_id": null,
+                "check_name": "Ensure that RDP access is restricted from the internet",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": [
+                        "security_rule"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "  tags                = local.common_tags\n"
+                    ],
+                    [
+                        6,
+                        "\n"
+                    ],
+                    [
+                        7,
+                        "  # Priority 4096 runs before Azure's default allow rules (65000/65001) and\n"
+                    ],
+                    [
+                        8,
+                        "  # default deny (65500), preserving an explicit deny-all baseline.\n"
+                    ],
+                    [
+                        9,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        10,
+                        "    name                       = \"DenyAllInbound\"\n"
+                    ],
+                    [
+                        11,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        12,
+                        "    direction                  = \"Inbound\"\n"
+                    ],
+                    [
+                        13,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        14,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        15,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        16,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        17,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        18,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        19,
+                        "  }\n"
+                    ],
+                    [
+                        20,
+                        "\n"
+                    ],
+                    [
+                        21,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        22,
+                        "    name                       = \"DenyAllOutbound\"\n"
+                    ],
+                    [
+                        23,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        24,
+                        "    direction                  = \"Outbound\"\n"
+                    ],
+                    [
+                        25,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        26,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        27,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        28,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        29,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        30,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        31,
+                        "  }\n"
+                    ],
+                    [
+                        32,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    32
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleRDPAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "cost-center": "PROM06-RESEARCH",
+                    "environment": "research",
+                    "owner": "PROM06 Research Team",
+                    "research_case": "PROM06-TC01"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "tags": [
+                        {
+                            "type": "locals",
+                            "name": "common_tags",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/main.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_10",
+                "bc_check_id": null,
+                "check_name": "Ensure that SSH access is restricted from the internet",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": [
+                        "security_rule"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "  tags                = local.common_tags\n"
+                    ],
+                    [
+                        6,
+                        "\n"
+                    ],
+                    [
+                        7,
+                        "  # Priority 4096 runs before Azure's default allow rules (65000/65001) and\n"
+                    ],
+                    [
+                        8,
+                        "  # default deny (65500), preserving an explicit deny-all baseline.\n"
+                    ],
+                    [
+                        9,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        10,
+                        "    name                       = \"DenyAllInbound\"\n"
+                    ],
+                    [
+                        11,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        12,
+                        "    direction                  = \"Inbound\"\n"
+                    ],
+                    [
+                        13,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        14,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        15,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        16,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        17,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        18,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        19,
+                        "  }\n"
+                    ],
+                    [
+                        20,
+                        "\n"
+                    ],
+                    [
+                        21,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        22,
+                        "    name                       = \"DenyAllOutbound\"\n"
+                    ],
+                    [
+                        23,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        24,
+                        "    direction                  = \"Outbound\"\n"
+                    ],
+                    [
+                        25,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        26,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        27,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        28,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        29,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        30,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        31,
+                        "  }\n"
+                    ],
+                    [
+                        32,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    32
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleSSHAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "cost-center": "PROM06-RESEARCH",
+                    "environment": "research",
+                    "owner": "PROM06 Research Team",
+                    "research_case": "PROM06-TC01"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "tags": [
+                        {
+                            "type": "locals",
+                            "name": "common_tags",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/main.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_77",
+                "bc_check_id": null,
+                "check_name": "Ensure that UDP Services are restricted from the Internet ",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": [
+                        "security_rule"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_network_security_group\" \"nsg\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                = \"nsg-demo-ai\"\n"
+                    ],
+                    [
+                        3,
+                        "  location            = azurerm_resource_group.rg.location\n"
+                    ],
+                    [
+                        4,
+                        "  resource_group_name = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        5,
+                        "  tags                = local.common_tags\n"
+                    ],
+                    [
+                        6,
+                        "\n"
+                    ],
+                    [
+                        7,
+                        "  # Priority 4096 runs before Azure's default allow rules (65000/65001) and\n"
+                    ],
+                    [
+                        8,
+                        "  # default deny (65500), preserving an explicit deny-all baseline.\n"
+                    ],
+                    [
+                        9,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        10,
+                        "    name                       = \"DenyAllInbound\"\n"
+                    ],
+                    [
+                        11,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        12,
+                        "    direction                  = \"Inbound\"\n"
+                    ],
+                    [
+                        13,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        14,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        15,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        16,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        17,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        18,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        19,
+                        "  }\n"
+                    ],
+                    [
+                        20,
+                        "\n"
+                    ],
+                    [
+                        21,
+                        "  security_rule {\n"
+                    ],
+                    [
+                        22,
+                        "    name                       = \"DenyAllOutbound\"\n"
+                    ],
+                    [
+                        23,
+                        "    priority                   = 4096\n"
+                    ],
+                    [
+                        24,
+                        "    direction                  = \"Outbound\"\n"
+                    ],
+                    [
+                        25,
+                        "    access                     = \"Deny\"\n"
+                    ],
+                    [
+                        26,
+                        "    protocol                   = \"*\"\n"
+                    ],
+                    [
+                        27,
+                        "    source_port_range          = \"*\"\n"
+                    ],
+                    [
+                        28,
+                        "    destination_port_range     = \"*\"\n"
+                    ],
+                    [
+                        29,
+                        "    source_address_prefix      = \"*\"\n"
+                    ],
+                    [
+                        30,
+                        "    destination_address_prefix = \"*\"\n"
+                    ],
+                    [
+                        31,
+                        "  }\n"
+                    ],
+                    [
+                        32,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/nsg.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "repo_file_path": "/terraform/nsg.tf",
+                "file_line_range": [
+                    1,
+                    32
+                ],
+                "resource": "azurerm_network_security_group.nsg",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.NSGRuleUDPAccessRestricted",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "cost-center": "PROM06-RESEARCH",
+                    "environment": "research",
+                    "owner": "PROM06 Research Team",
+                    "research_case": "PROM06-TC01"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/nsg.tf",
+                "breadcrumbs": {
+                    "tags": [
+                        {
+                            "type": "locals",
+                            "name": "common_tags",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/main.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "location": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            },
+            {
+                "check_id": "CKV_AZURE_3",
+                "bc_check_id": null,
+                "check_name": "Ensure that 'enable_https_traffic_only' is enabled",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": [
+                        "enable_https_traffic_only"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageAccountsTransportEncryption",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV_AZURE_244",
+                "bc_check_id": null,
+                "check_name": "Avoid the use of local users for Azure Storage unless necessary",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": [
+                        "local_user_enabled"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageLocalUsers",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV_AZURE_43",
+                "bc_check_id": null,
+                "check_name": "Ensure Storage Accounts adhere to the naming rules",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": [
+                        "name"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageAccountName",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV_AZURE_36",
+                "bc_check_id": null,
+                "check_name": "Ensure 'Trusted Microsoft Services' is enabled for Storage Account access",
+                "check_result": {
+                    "result": "PASSED",
+                    "evaluated_keys": []
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageAccountAzureServicesAccessEnabled",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV2_AZURE_31",
+                "bc_check_id": null,
+                "check_name": "Ensure VNET subnet is configured with a Network Security Group (NSG)",
+                "check_result": {
+                    "result": "PASSED",
+                    "entity": {
+                        "azurerm_subnet": {
+                            "subnet": {
+                                "__end_line__": 25,
+                                "__start_line__": 18,
+                                "address_prefixes": [
+                                    [
+                                        "10.0.1.0/24"
+                                    ]
+                                ],
+                                "default_outbound_access_enabled": [
+                                    false
+                                ],
+                                "name": [
+                                    "subnet-demo"
+                                ],
+                                "resource_group_name": [
+                                    "rg-network-demo-ai"
+                                ],
+                                "virtual_network_name": [
+                                    "vnet-demo-ai"
+                                ],
+                                "__address__": "azurerm_subnet.subnet"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "resource_type",
+                        "delegation/service_delegation/name",
+                        "name"
+                    ]
+                },
+                "code_block": [
+                    [
+                        18,
+                        "resource \"azurerm_subnet\" \"subnet\" {\n"
+                    ],
+                    [
+                        19,
+                        "  name                            = \"subnet-demo\"\n"
+                    ],
+                    [
+                        20,
+                        "  resource_group_name             = azurerm_resource_group.rg.name\n"
+                    ],
+                    [
+                        21,
+                        "  virtual_network_name            = azurerm_virtual_network.vnet.name\n"
+                    ],
+                    [
+                        22,
+                        "  address_prefixes                = [\"10.0.1.0/24\"]\n"
+                    ],
+                    [
+                        23,
+                        "  default_outbound_access_enabled = false\n"
+                    ],
+                    [
+                        24,
+                        "  # Subnets do not support Azure resource tags; the parent VNet and NSG are tagged.\n"
+                    ],
+                    [
+                        25,
+                        "}\n"
+                    ]
+                ],
+                "file_path": "/network.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                "repo_file_path": "/terraform/network.tf",
+                "file_line_range": [
+                    18,
+                    25
+                ],
+                "resource": "azurerm_subnet.subnet",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": null,
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                "breadcrumbs": {
+                    "resource_group_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_resource_group.rg",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ],
+                    "virtual_network_name": [
+                        {
+                            "type": "resource",
+                            "name": "azurerm_virtual_network.vnet",
+                            "path": "/home/claude/prom06-local-scans/TC07/src/terraform/network.tf",
+                            "module_connection": false
+                        }
+                    ]
+                }
+            }
+        ],
+        "failed_checks": [
+            {
+                "check_id": "CKV_AZURE_59",
+                "bc_check_id": null,
+                "check_name": "Ensure that Storage accounts disallow public access",
+                "check_result": {
+                    "result": "FAILED",
+                    "evaluated_keys": [
+                        "public_network_access_enabled"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageAccountDisablePublicAccess",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV_AZURE_206",
+                "bc_check_id": null,
+                "check_name": "Ensure that Storage Accounts use replication",
+                "check_result": {
+                    "result": "FAILED",
+                    "evaluated_keys": [
+                        "account_replication_type"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageAccountsUseReplication",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV_AZURE_190",
+                "bc_check_id": null,
+                "check_name": "Ensure that Storage blobs restrict public access",
+                "check_result": {
+                    "result": "FAILED",
+                    "evaluated_keys": [
+                        "allow_nested_items_to_be_public"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageBlobRestrictPublicAccess",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV_AZURE_33",
+                "bc_check_id": null,
+                "check_name": "Ensure Storage logging is enabled for Queue service for read, write and delete requests",
+                "check_result": {
+                    "result": "FAILED",
+                    "evaluated_keys": [
+                        "account_kind"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageAccountLoggingQueueServiceEnabled",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV_AZURE_44",
+                "bc_check_id": null,
+                "check_name": "Ensure Storage Account is using the latest version of TLS encryption",
+                "check_result": {
+                    "result": "FAILED",
+                    "evaluated_keys": [
+                        "min_tls_version"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.terraform.checks.resource.azure.StorageAccountMinimumTlsVersion",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV2_AZURE_47",
+                "bc_check_id": null,
+                "check_name": "Ensure storage account is configured without blob anonymous access",
+                "check_result": {
+                    "result": "FAILED",
+                    "entity": {
+                        "azurerm_storage_account": {
+                            "tc07_storage": {
+                                "__end_line__": 14,
+                                "__start_line__": 1,
+                                "account_replication_type": [
+                                    "LRS"
+                                ],
+                                "account_tier": [
+                                    "Standard"
+                                ],
+                                "location": [
+                                    "uksouth"
+                                ],
+                                "min_tls_version": [
+                                    "TLS1_0"
+                                ],
+                                "name": [
+                                    "prom06tc07storage"
+                                ],
+                                "resource_group_name": [
+                                    "rg-prom06-tc07"
+                                ],
+                                "tags": [
+                                    {
+                                        "Environment": "Research",
+                                        "TestCase": "TC07"
+                                    }
+                                ],
+                                "__address__": "azurerm_storage_account.tc07_storage"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "allow_nested_items_to_be_public"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV2_AZURE_38",
+                "bc_check_id": null,
+                "check_name": "Ensure soft-delete is enabled on Azure storage account",
+                "check_result": {
+                    "result": "FAILED",
+                    "entity": {
+                        "azurerm_storage_account": {
+                            "tc07_storage": {
+                                "__end_line__": 14,
+                                "__start_line__": 1,
+                                "account_replication_type": [
+                                    "LRS"
+                                ],
+                                "account_tier": [
+                                    "Standard"
+                                ],
+                                "location": [
+                                    "uksouth"
+                                ],
+                                "min_tls_version": [
+                                    "TLS1_0"
+                                ],
+                                "name": [
+                                    "prom06tc07storage"
+                                ],
+                                "resource_group_name": [
+                                    "rg-prom06-tc07"
+                                ],
+                                "tags": [
+                                    {
+                                        "Environment": "Research",
+                                        "TestCase": "TC07"
+                                    }
+                                ],
+                                "__address__": "azurerm_storage_account.tc07_storage"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "blob_properties/delete_retention_policy",
+                        "account_kind",
+                        "blob_properties/delete_retention_policy/days"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV2_AZURE_40",
+                "bc_check_id": null,
+                "check_name": "Ensure storage account is not configured with Shared Key authorization",
+                "check_result": {
+                    "result": "FAILED",
+                    "entity": {
+                        "azurerm_storage_account": {
+                            "tc07_storage": {
+                                "__end_line__": 14,
+                                "__start_line__": 1,
+                                "account_replication_type": [
+                                    "LRS"
+                                ],
+                                "account_tier": [
+                                    "Standard"
+                                ],
+                                "location": [
+                                    "uksouth"
+                                ],
+                                "min_tls_version": [
+                                    "TLS1_0"
+                                ],
+                                "name": [
+                                    "prom06tc07storage"
+                                ],
+                                "resource_group_name": [
+                                    "rg-prom06-tc07"
+                                ],
+                                "tags": [
+                                    {
+                                        "Environment": "Research",
+                                        "TestCase": "TC07"
+                                    }
+                                ],
+                                "__address__": "azurerm_storage_account.tc07_storage"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "shared_access_key_enabled"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV2_AZURE_33",
+                "bc_check_id": null,
+                "check_name": "Ensure storage account is configured with private endpoint",
+                "check_result": {
+                    "result": "FAILED",
+                    "entity": {
+                        "azurerm_storage_account": {
+                            "tc07_storage": {
+                                "__end_line__": 14,
+                                "__start_line__": 1,
+                                "account_replication_type": [
+                                    "LRS"
+                                ],
+                                "account_tier": [
+                                    "Standard"
+                                ],
+                                "location": [
+                                    "uksouth"
+                                ],
+                                "min_tls_version": [
+                                    "TLS1_0"
+                                ],
+                                "name": [
+                                    "prom06tc07storage"
+                                ],
+                                "resource_group_name": [
+                                    "rg-prom06-tc07"
+                                ],
+                                "tags": [
+                                    {
+                                        "Environment": "Research",
+                                        "TestCase": "TC07"
+                                    }
+                                ],
+                                "__address__": "azurerm_storage_account.tc07_storage"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "resource_type"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV2_AZURE_41",
+                "bc_check_id": null,
+                "check_name": "Ensure storage account is configured with SAS expiration policy",
+                "check_result": {
+                    "result": "FAILED",
+                    "entity": {
+                        "azurerm_storage_account": {
+                            "tc07_storage": {
+                                "__end_line__": 14,
+                                "__start_line__": 1,
+                                "account_replication_type": [
+                                    "LRS"
+                                ],
+                                "account_tier": [
+                                    "Standard"
+                                ],
+                                "location": [
+                                    "uksouth"
+                                ],
+                                "min_tls_version": [
+                                    "TLS1_0"
+                                ],
+                                "name": [
+                                    "prom06tc07storage"
+                                ],
+                                "resource_group_name": [
+                                    "rg-prom06-tc07"
+                                ],
+                                "tags": [
+                                    {
+                                        "Environment": "Research",
+                                        "TestCase": "TC07"
+                                    }
+                                ],
+                                "__address__": "azurerm_storage_account.tc07_storage"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "sas_policy/expiration_period",
+                        "sas_policy",
+                        "shared_access_key_enabled"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            },
+            {
+                "check_id": "CKV2_AZURE_1",
+                "bc_check_id": null,
+                "check_name": "Ensure storage for critical data are encrypted with Customer Managed Key",
+                "check_result": {
+                    "result": "FAILED",
+                    "entity": {
+                        "azurerm_storage_account": {
+                            "tc07_storage": {
+                                "__end_line__": 14,
+                                "__start_line__": 1,
+                                "account_replication_type": [
+                                    "LRS"
+                                ],
+                                "account_tier": [
+                                    "Standard"
+                                ],
+                                "location": [
+                                    "uksouth"
+                                ],
+                                "min_tls_version": [
+                                    "TLS1_0"
+                                ],
+                                "name": [
+                                    "prom06tc07storage"
+                                ],
+                                "resource_group_name": [
+                                    "rg-prom06-tc07"
+                                ],
+                                "tags": [
+                                    {
+                                        "Environment": "Research",
+                                        "TestCase": "TC07"
+                                    }
+                                ],
+                                "__address__": "azurerm_storage_account.tc07_storage"
+                            }
+                        }
+                    },
+                    "evaluated_keys": [
+                        "resource_type",
+                        "customer_managed_key/key_vault_key_id"
+                    ]
+                },
+                "code_block": [
+                    [
+                        1,
+                        "resource \"azurerm_storage_account\" \"tc07_storage\" {\n"
+                    ],
+                    [
+                        2,
+                        "  name                     = \"prom06tc07storage\"\n"
+                    ],
+                    [
+                        3,
+                        "  resource_group_name      = \"rg-prom06-tc07\"\n"
+                    ],
+                    [
+                        4,
+                        "  location                 = \"uksouth\"\n"
+                    ],
+                    [
+                        5,
+                        "  account_tier             = \"Standard\"\n"
+                    ],
+                    [
+                        6,
+                        "  account_replication_type = \"LRS\"\n"
+                    ],
+                    [
+                        7,
+                        "\n"
+                    ],
+                    [
+                        8,
+                        "  min_tls_version = \"TLS1_0\"\n"
+                    ],
+                    [
+                        9,
+                        "\n"
+                    ],
+                    [
+                        10,
+                        "  tags = {\n"
+                    ],
+                    [
+                        11,
+                        "    Environment = \"Research\"\n"
+                    ],
+                    [
+                        12,
+                        "    TestCase    = \"TC07\"\n"
+                    ],
+                    [
+                        13,
+                        "  }\n"
+                    ],
+                    [
+                        14,
+                        "}"
+                    ]
+                ],
+                "file_path": "/storage.tf",
+                "file_abs_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf",
+                "repo_file_path": "/terraform/storage.tf",
+                "file_line_range": [
+                    1,
+                    14
+                ],
+                "resource": "azurerm_storage_account.tc07_storage",
+                "evaluations": null,
+                "check_class": "checkov.common.graph.checks_infra.base_check",
+                "fixed_definition": null,
+                "entity_tags": {
+                    "Environment": "Research",
+                    "TestCase": "TC07"
+                },
+                "caller_file_path": null,
+                "caller_file_line_range": null,
+                "resource_address": null,
+                "severity": null,
+                "bc_category": null,
+                "benchmarks": {},
+                "description": null,
+                "short_description": null,
+                "vulnerability_details": null,
+                "connected_node": null,
+                "guideline": null,
+                "details": [],
+                "check_len": null,
+                "definition_context_file_path": "/home/claude/prom06-local-scans/TC07/src/terraform/storage.tf"
+            }
+        ],
+        "skipped_checks": [],
+        "parsing_errors": []
+    },
+    "summary": {
+        "passed": 11,
+        "failed": 11,
+        "skipped": 0,
+        "parsing_errors": 0,
+        "resource_count": 21,
+        "checkov_version": "3.3.1"
+    },
+    "url": "Add an api key '--bc-api-key <api-key>' to see more detailed insights via https://bridgecrew.cloud"
+}

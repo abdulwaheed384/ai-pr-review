@@ -1,0 +1,51 @@
+{
+	"results": [
+		{
+			"rule_id": "AVD-AZU-0048",
+			"long_id": "azure-network-disable-rdp-from-internet",
+			"rule_description": "RDP access should not be accessible from the Internet, should be blocked on port 3389",
+			"rule_provider": "azure",
+			"rule_service": "network",
+			"impact": "Anyone from the internet can potentially RDP onto an instance",
+			"resolution": "Block RDP port from internet",
+			"links": [
+				"https://aquasecurity.github.io/tfsec/v1.28.14/checks/azure/network/disable-rdp-from-internet/",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/network_security_group#security_rule",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule#source_port_ranges"
+			],
+			"description": "Security group rule allows ingress to RDP port from multiple public internet addresses.",
+			"severity": "CRITICAL",
+			"warning": false,
+			"status": 0,
+			"resource": "azurerm_network_security_group.nsg",
+			"location": {
+				"filename": "/home/claude/prom06-local-scans/TC03/src/terraform/nsg.tf",
+				"start_line": 18,
+				"end_line": 18
+			}
+		},
+		{
+			"rule_id": "AVD-AZU-0047",
+			"long_id": "azure-network-no-public-ingress",
+			"rule_description": "An inbound network security rule allows traffic from /0.",
+			"rule_provider": "azure",
+			"rule_service": "network",
+			"impact": "The port is exposed for ingress from the internet",
+			"resolution": "Set a more restrictive cidr range",
+			"links": [
+				"https://aquasecurity.github.io/tfsec/v1.28.14/checks/azure/network/no-public-ingress/",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule"
+			],
+			"description": "Security group rule allows ingress from public internet.",
+			"severity": "CRITICAL",
+			"warning": false,
+			"status": 0,
+			"resource": "azurerm_network_security_group.nsg",
+			"location": {
+				"filename": "/home/claude/prom06-local-scans/TC03/src/terraform/nsg.tf",
+				"start_line": 18,
+				"end_line": 18
+			}
+		}
+	]
+}

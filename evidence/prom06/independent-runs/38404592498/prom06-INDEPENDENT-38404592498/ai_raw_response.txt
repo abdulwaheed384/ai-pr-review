@@ -1,0 +1,39 @@
+```json
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces an NSG with an explicit inbound Allow rule for TCP/80 from any source (0.0.0.0/0), annotated as intentional for security testing (TC04). The configuration also provisions a Log Analytics workspace with private-only access, an AMPLS private link scope, a private endpoint, and NSG diagnostic settings. The overall posture is research-scoped. One confirmed security finding is raised for the public HTTP exposure, which is a demonstrated weakness regardless of stated test intent. All other controls — tagging, logging, NSG association, private endpoint, deny-all baseline — are properly configured.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The NSG rule 'AllowHTTP' at priority 302 explicitly permits inbound TCP/80 from any IPv4 address (source_address_prefix = '0.0.0.0/0') to any destination within the subnet. This is a concrete, demonstrated public exposure in the current configuration. The inline comment acknowledges the rule is deliberately public ('TC04: Deliberately public HTTP access for security testing only'), but the code contains no scope-limiting control (e.g., source IP restriction, time-bound rule, or application gateway front-end). The annotation documents intent but does not mitigate the exposure. SEC-001 requires explicit justification and — implicitly — that the exposure is scoped appropriately; the current rule is unbounded.",
+      "severity": "HIGH",
+      "title": "Unrestricted inbound HTTP (TCP/80) permitted from any source via NSG rule",
+      "description": "The NSG resource 'azurerm_network_security_group.nsg' contains a security rule named 'AllowHTTP' at priority 302 that allows inbound TCP traffic on port 80 from source 0.0.0.0/0 to any destination. This rule takes effect before the DenyAllInbound rule at priority 4096. Any host on the public internet can reach TCP/80 on resources associated with the subnet 'subnet-demo' (10.0.1.0/24). The comment identifies this as a test-case requirement (TC04), but the configuration itself does not restrict the source to a known test range or document an approved exception beyond the inline comment.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowHTTP': priority=302, direction=Inbound, access=Allow, protocol=Tcp, destination_port_range=80, source_address_prefix=0.0.0.0/0, destination_address_prefix=*.",
+      "impact": "Any internet-connected host can initiate TCP connections to port 80 on resources attached to the associated subnet. If any workload is deployed to this subnet (now or later in the test case), it is immediately reachable from the public internet on HTTP without authentication at the network layer. The subnet also has default_outbound_access_enabled=false, which limits exfiltration risk, but does not reduce inbound attack surface.",
+      "recommendation": "If public HTTP access is genuinely required for TC04 testing, restrict source_address_prefix to the specific IP range(s) used by the test harness rather than 0.0.0.0/0. Document the approved source range and the approval reference in the Terraform comment. If the rule is only needed transiently, consider removing it from the baseline configuration and applying it only during the test window. At minimum, ensure an approved exception record exists that references TC04 and the owning team."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "NET-001 satisfied: azurerm_subnet_network_security_group_association.subnet associates the NSG with subnet-demo; all subnets in the configuration have NSG coverage.",
+    "TAG-001 satisfied: azurerm_network_security_group.nsg, azurerm_log_analytics_workspace.network, azurerm_monitor_private_link_scope.network, azurerm_private_endpoint.monitor, and all private DNS zone resources carry the common_tags block with environment, owner, cost-center, and research_case keys.",
+    "LOG-001 satisfied: azurerm_monitor_diagnostic_setting.nsg enables both supported NSG diagnostic categories (NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter) and forwards them to the Log Analytics workspace.",
+    "Defense-in-depth deny baseline: explicit DenyAllInbound and DenyAllOutbound rules at priority 4096 provide a documented deny-all baseline beyond Azure's built-in defaults.",
+    "Private-only Log Analytics access: internet_ingestion_enabled=false and internet_query_enabled=false on the workspace, combined with an AMPLS private link scope (ingestion_access_mode=PrivateOnly, query_access_mode=PrivateOnly) and a private endpoint with full DNS zone group, ensure workspace data plane is not reachable from the public internet.",
+    "local_authentication_enabled=false on the Log Analytics workspace enforces Azure AD/Entra ID authentication only, eliminating shared-key credential risk.",
+    "default_outbound_access_enabled=false on subnet-demo prevents implicit outbound internet access, limiting lateral movement and exfiltration risk.",
+    "NET-003 not applicable: the workload is explicitly tagged environment=research and the network.tf comment documents the research exemption; DDoS Protection Standard is not required.",
+    "NET-002 satisfied: dns_servers=[] on the VNet defers to Azure DNS (the platform default), with a comment noting a custom resolver must be reachable; no public DNS server is configured."
+  ],
+  "final_recommendation": "The only confirmed finding is the unrestricted inbound HTTP rule (F-001 / SEC-001). All other reviewed controls — NSG association, tagging, diagnostic logging, private workspace access, and the deny-all baseline — are correctly configured for a research workload. Remediate F-001 by narrowing source_address_prefix to the specific test-harness IP range and documenting the formal exception reference for TC04 before this configuration is applied to any environment where the subnet hosts a workload."
+}
+```

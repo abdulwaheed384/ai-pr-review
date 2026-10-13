@@ -1,0 +1,34 @@
+```json
+{
+  "summary": "The changed files introduce TC11, a deliberately over-privileged custom Azure RBAC role scoped to the subscription level. The role grants wildcard actions ('*') across all Azure resource types and operations at subscription scope, while tc11_requirements.tf explicitly documents that the intended task requires only two narrow read-only permissions. This is a confirmed security vulnerability: the role as defined vastly exceeds least-privilege for its stated purpose. All other controls in the broader configuration (NSG, logging, private endpoints, tags) are unaffected by this change and remain compliant.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The Terraform code supplies direct, unambiguous evidence of an over-privileged role definition. The role grants 'actions = [\"*\"]' at subscription scope, while tc11_requirements.tf explicitly states the task requires only two specific read actions ('Microsoft.Resources/subscriptions/resourceGroups/read' and 'Microsoft.Resources/subscriptions/resources/read'). This is not a hypothetical risk or context-dependent concern; the disparity is documented in the same PR.",
+      "severity": "HIGH",
+      "title": "Custom RBAC role grants wildcard (*) permissions at subscription scope, violating least privilege",
+      "description": "The resource 'azurerm_role_definition.tc11_reporting_role' in tc11_iam.tf defines a custom Azure role with 'actions = [\"*\"]' and 'not_actions = []', granting every control-plane action across all Azure resource providers at subscription scope. The tc11_requirements.tf file in the same PR explicitly documents that the task this role supports requires only two read-only resource group and resource listing permissions. Assigning this role to any principal would grant full subscription-level control plane access, including the ability to create, delete, or modify any resource, assign other roles (if combined with authorization actions), access secrets, and more. The in-code description also acknowledges: 'permissions exceed the documented reporting task.'",
+      "evidence": "azurerm_role_definition.tc11_reporting_role in tc11_iam.tf: permissions { actions = [\"*\"], not_actions = [] }, assignable_scopes = [data.azurerm_subscription.tc11_current.id]. Contrast with tc11_requirements.tf: tc11_required_actions = [\"Microsoft.Resources/subscriptions/resourceGroups/read\", \"Microsoft.Resources/subscriptions/resources/read\"].",
+      "impact": "Any principal assigned this role gains unrestricted Azure control-plane access at subscription scope. This includes the ability to read, write, and delete all resources, potentially access secrets from Key Vault or storage, modify network controls, and escalate privilege further. Even if currently unassigned, deploying an assignable wildcard role at subscription scope creates a standing escalation path.",
+      "recommendation": "Replace 'actions = [\"*\"]' with the minimal documented permission set: ['Microsoft.Resources/subscriptions/resourceGroups/read', 'Microsoft.Resources/subscriptions/resources/read']. Restrict 'assignable_scopes' to the narrowest applicable scope (e.g., a specific resource group) rather than the full subscription if possible. Confirm the role is not assigned to any principal before or after deployment."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "tc11_requirements.tf explicitly documents the intended minimum permissions alongside the role definition, making the over-privilege immediately auditable. This is good practice for a research test case.",
+    "The in-code comment on tc11_iam.tf states 'Research-only test fixture. Do not deploy.' and the description field acknowledges the excess permissions, demonstrating awareness of the deviation from least privilege.",
+    "All pre-existing controls in the broader configuration remain intact: the NSG enforces deny-all inbound and outbound with explicit priority-4096 rules, the Log Analytics workspace has local authentication and public ingestion/query disabled, the AMPLS uses PrivateOnly access modes backed by a private endpoint with correct DNS zone groups, diagnostic settings cover both NSG log categories, and all taggable resources carry the required environment, owner, cost-center, and research_case tags.",
+    "The subnet has default_outbound_access_enabled = false, providing an additional outbound restriction consistent with the NSG deny-all posture."
+  ],
+  "final_recommendation": "The single confirmed finding (F-001) is the wildcard RBAC role definition. Before deploying or merging, replace 'actions = [\"*\"]' with the two documented read-only actions and narrow the assignable scope below subscription level. If this role is retained as a deliberate test fixture, ensure it is never assigned to any principal in any environment and consider using Terraform lifecycle controls (e.g., prevent_destroy = false, or a separate test-only workspace with no real subscription binding) to isolate it from production or shared research subscriptions."
+}
+```

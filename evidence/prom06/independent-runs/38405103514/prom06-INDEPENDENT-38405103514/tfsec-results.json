@@ -1,0 +1,27 @@
+{
+	"results": [
+		{
+			"rule_id": "AVD-AZU-0047",
+			"long_id": "azure-network-no-public-ingress",
+			"rule_description": "An inbound network security rule allows traffic from /0.",
+			"rule_provider": "azure",
+			"rule_service": "network",
+			"impact": "The port is exposed for ingress from the internet",
+			"resolution": "Set a more restrictive cidr range",
+			"links": [
+				"https://aquasecurity.github.io/tfsec/v1.28.14/checks/azure/network/no-public-ingress/",
+				"https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule"
+			],
+			"description": "Security group rule allows ingress from public internet.",
+			"severity": "CRITICAL",
+			"warning": false,
+			"status": 0,
+			"resource": "azurerm_network_security_rule.tc12_public_https",
+			"location": {
+				"filename": "/home/runner/work/ai-pr-review/ai-pr-review/terraform/tc12_https.tf",
+				"start_line": 13,
+				"end_line": 13
+			}
+		}
+	]
+}

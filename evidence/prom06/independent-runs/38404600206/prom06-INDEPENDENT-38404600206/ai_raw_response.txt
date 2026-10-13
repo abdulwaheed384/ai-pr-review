@@ -1,0 +1,63 @@
+```json
+{
+  "summary": "The changed file terraform/storage.tf introduces an Azure Storage Account with two confirmed security issues: TLS 1.0 is configured as the minimum TLS version (a concrete cryptographic weakness), and the resource is missing three of the four mandatory tags required by TAG-001 (owner, cost-center, research_case). No public access configuration, network rules, or diagnostic settings are present in the file; the storage account is in a separate resource group (rg-prom06-tc07) from the rest of the TC01 infrastructure, and no additional context files cover TC07.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The Terraform resource explicitly sets min_tls_version = \"TLS1_0\", which permits connections using TLS 1.0 and TLS 1.1. These protocol versions have known cryptographic weaknesses (POODLE, BEAST, deprecated cipher suites) and are considered insecure. This is a demonstrable current weakness in the supplied code regardless of workload classification.",
+      "severity": "HIGH",
+      "title": "Storage account permits insecure TLS 1.0 and TLS 1.1 connections",
+      "description": "The storage account prom06tc07storage sets min_tls_version = \"TLS1_0\", allowing clients to negotiate TLS 1.0 or TLS 1.1 sessions. Both protocol versions are deprecated and known to be vulnerable to attacks such as POODLE and BEAST. Azure Storage defaults to TLS1_2 when this attribute is omitted; setting it to TLS1_0 is an explicit downgrade. The Azure provider documentation and Microsoft guidance recommend TLS1_2 as the minimum.",
+      "evidence": "Resource azurerm_storage_account.tc07_storage in terraform/storage.tf: min_tls_version = \"TLS1_0\"",
+      "impact": "Any client or service communicating with this storage account over TLS 1.0 or 1.1 is exposed to protocol-level attacks that can result in session interception or data exposure in transit.",
+      "recommendation": "Set min_tls_version = \"TLS1_2\" in the azurerm_storage_account resource. TLS 1.2 is the current Azure platform minimum recommendation and eliminates the known weaknesses of earlier protocol versions."
+    },
+    {
+      "id": "F-002",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy TAG-001 requires all taggable Azure resources to include mandatory tags: environment, owner, cost-center, and research_case. The storage account includes only Environment and TestCase tags; owner, cost-center, and research_case are absent. The storage account is a taggable resource and the policy applies.",
+      "severity": "LOW",
+      "title": "Storage account missing mandatory tags: owner, cost-center, research_case",
+      "description": "TAG-001 mandates that all taggable Azure resources include four tags: environment, owner, cost-center, and research_case. The azurerm_storage_account.tc07_storage resource defines only Environment and TestCase tags. The three required tags owner, cost-center, and research_case are not present. Note also that the tag key Environment uses a capital E, which may diverge from the lowercase environment convention used in local.common_tags elsewhere in the repository, though the policy does not enforce case.",
+      "evidence": "Resource azurerm_storage_account.tc07_storage in terraform/storage.tf: tags block contains only { Environment = \"Research\", TestCase = \"TC07\" }. Required tags owner, cost-center, and research_case are absent.",
+      "impact": "Missing mandatory tags prevent accurate cost attribution, ownership identification, and research case traceability, violating TAG-001 governance requirements.",
+      "recommendation": "Add the missing mandatory tags to the storage account. For consistency with the repository pattern, extend or replace the inline tags block with values equivalent to local.common_tags, or define a local for TC07 that includes environment, owner, cost-center, and research_case with appropriate TC07 values."
+    },
+    {
+      "id": "F-003",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "The storage account does not configure a network_rules block, meaning the default is to allow access from all networks (public network access enabled). Whether this constitutes a violation of SEC-001 depends on whether the storage account is intended to be publicly accessible or restricted to the VNet/private endpoint. The resource group rg-prom06-tc07 differs from the TC01 infrastructure, and no private endpoint or network ACL for this storage account is present in the supplied files.",
+      "severity": "MEDIUM",
+      "title": "Storage account has no network access restrictions configured",
+      "description": "The azurerm_storage_account.tc07_storage resource does not include a network_rules block. When no network_rules block is specified, the Azure Storage account defaults to allowing access from all networks (default_action = \"Allow\"). SEC-001 requires that no resource be publicly exposed unless explicitly required and justified. No justification or private endpoint for this storage account appears in the supplied Terraform files. The storage account resides in resource group rg-prom06-tc07, which is not defined in the supplied configuration, so no additional network controls for that resource group are visible.",
+      "evidence": "Resource azurerm_storage_account.tc07_storage in terraform/storage.tf: no network_rules block is present. No private_endpoint resource targeting this storage account exists in the supplied files.",
+      "impact": "If the storage account is reachable from the public internet without network ACLs, any authenticated or misconfigured access attempt is exposed to the internet. The actual risk depends on what data is stored and whether additional controls exist outside the supplied Terraform.",
+      "recommendation": "To resolve the uncertainty: confirm whether a network_rules block with default_action = \"Deny\" and appropriate virtual_network_rules or ip_rules is required, or whether a private endpoint is planned for this storage account. If public access is not required, add network_rules { default_action = \"Deny\" } and configure appropriate access exceptions. If this is supplied in infrastructure not shown in these files, document the compensating control."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    },
+    {
+      "finding_id": "F-002",
+      "policy_id": "TAG-001",
+      "policy_name": "All taggable Azure resources must include mandatory tags: environment, owner, cost-center, research_case.",
+      "severity": "LOW"
+    }
+  ],
+  "positives": [
+    "The storage account uses Standard tier with LRS replication, which is appropriate for a research workload.",
+    "The broader TC01 infrastructure (nsg.tf, network.tf) demonstrates strong security posture: explicit deny-all NSG rules, private-only Log Analytics workspace, AMPLS private endpoint with private DNS, and disabled default outbound subnet access.",
+    "The TC01 Log Analytics workspace has local_authentication_enabled = false and internet_ingestion_enabled = false, enforcing private, credential-managed access."
+  ],
+  "final_recommendation": "Two confirmed issues require remediation before merge: (1) change min_tls_version to TLS1_2 to eliminate the insecure protocol downgrade, and (2) add the missing mandatory tags (owner, cost-center, research_case) to satisfy TAG-001. Additionally, clarify and document the intended network access posture for the storage account — if public access is not required, add a network_rules block with default_action = \"Deny\" and supply or reference any private endpoint configuration for rg-prom06-tc07."
+}
+```

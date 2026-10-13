@@ -1,0 +1,37 @@
+```json
+{
+  "summary": "The changed file terraform/tc10_iam.tf introduces a custom Azure role definition granting wildcard ('*') actions at subscription scope as a research test fixture. This is a confirmed high-severity security vulnerability: the role definition permits any action on any resource across the entire subscription and is assignable at subscription scope. Even as a test fixture, its presence in deployed infrastructure represents a standing privilege-escalation risk if the role is assigned to any principal. The remaining configuration (networking, logging, tagging) continues to meet policy requirements established in the context files.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The Terraform resource azurerm_role_definition.tc10_excessive_permissions explicitly configures actions = [\"*\"] with no not_actions restrictions and sets assignable_scopes to the current subscription ID. This grants the ability to perform any Azure Resource Manager action across the entire subscription to any principal the role is assigned to. This is a concrete, deployable security weakness present in the changed file, not a hypothetical.",
+      "severity": "HIGH",
+      "title": "Custom role definition grants wildcard (*) permissions at subscription scope",
+      "description": "The resource azurerm_role_definition.tc10_excessive_permissions defines a custom Azure RBAC role with actions = [\"*\"] and not_actions = [], making it equivalent to Owner or higher on every resource in the subscription. The assignable_scopes list contains only data.azurerm_subscription.current.id, meaning the role can be assigned at the broadest possible scope. Although the file comment states 'Research-only test fixture. Do not deploy', the resource will be provisioned if this file is included in a Terraform apply. Once the role definition exists in Azure, any authorized operator can assign it to a principal (user, service principal, managed identity), resulting in full subscription-level access. There is no data source, condition, or Terraform lifecycle guard in the supplied code that prevents deployment or assignment.",
+      "evidence": "azurerm_role_definition.tc10_excessive_permissions in terraform/tc10_iam.tf: permissions { actions = [\"*\"] not_actions = [] } assignable_scopes = [data.azurerm_subscription.current.id]",
+      "impact": "A principal assigned this role gains the ability to read, write, and delete any resource in the subscription, manage role assignments (privilege escalation), access secrets and credentials, and exfiltrate or destroy all data. Even without an active assignment, the role definition's existence reduces the effort required for privilege escalation by an insider or compromised account to a single role-assignment operation.",
+      "recommendation": "Do not deploy wildcard-permission role definitions to a shared or persistent subscription, even as test fixtures. If the test case requires observing the creation of an overly permissive role, consider: (1) scoping assignable_scopes to a dedicated, isolated resource group rather than the subscription; (2) adding not_actions to exclude sensitive operations such as role assignment (Microsoft.Authorization/roleAssignments/write) and privileged data-plane actions; (3) using a Terraform lifecycle { prevent_destroy = true } or a separate, isolated subscription for destructive test cases; (4) removing the role definition immediately after the test via CI/CD teardown rather than leaving it in a persistent state."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "The existing network configuration (network.tf, nsg.tf) continues to meet NET-001 (subnet NSG association), NET-002 (no public DNS servers), and SEC-001 for all previously reviewed resources.",
+    "The NSG applies explicit DenyAllInbound and DenyAllOutbound rules at priority 4096, evaluated before Azure default allow rules, providing a strong deny-all network baseline.",
+    "The Log Analytics workspace has local_authentication_enabled = false, internet_ingestion_enabled = false, and internet_query_enabled = false, with private access provided through a correctly configured AMPLS private endpoint and Private Link Scope.",
+    "NSG diagnostic settings forward NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter logs to the workspace, satisfying LOG-001 for the applicable diagnostic categories.",
+    "All taggable resources carry the mandatory environment, owner, and cost-center tags required by TAG-001, using documented research values.",
+    "The new tc10_iam.tf file itself applies local.common_tags to no taggable resources (azurerm_role_definition and data sources do not support tags in this context), so TAG-001 is not violated by the addition.",
+    "The daily_quota_gb = 1 ingestion cap on the Log Analytics workspace is documented as a research cost control and does not conflict with any supplied policy requirement for this non-production workload."
+  ],
+  "final_recommendation": "The single confirmed finding (F-001) requires remediation before merge. A subscription-scoped wildcard role definition is a standing privilege-escalation primitive regardless of its stated research purpose. Restrict the assignable scope to an isolated resource group, add meaningful not_actions exclusions, or move this test case to a dedicated isolated subscription. If the test case specifically requires observing subscription-scoped wildcard permissions, document the explicit justification and add automated teardown to remove the role definition immediately after the test run completes."
+}
+```

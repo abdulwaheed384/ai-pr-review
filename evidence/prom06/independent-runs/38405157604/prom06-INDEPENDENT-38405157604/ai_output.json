@@ -1,0 +1,46 @@
+{
+  "summary": "The changed file (terraform/network.tf) introduces a VNet, subnet, and NSG association for a tagged research workload (PROM06-TC01). One confirmed policy violation is present: the VNet is configured with a public DNS server (8.8.8.8) in violation of NET-002, which the inline comment acknowledges is deliberate for testing (TC06). The subnet correctly has an NSG association satisfying NET-001. The NSG (nsg.tf) enforces explicit deny-all inbound and outbound rules. The subnet disables default outbound access. Diagnostic logging, private-link monitoring, and tagging are configured in companion files. No DDoS finding is raised because the workload is explicitly scoped as research and NET-003 exempts non-production workloads.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy NET-002 explicitly prohibits the use of public DNS servers in Virtual Networks, requiring Azure DNS or internal DNS only. The Terraform configuration sets dns_servers to [\"8.8.8.8\"], a public Google DNS resolver, with an inline comment confirming this is intentional for test case TC06. The policy does not provide an exemption for research or testing workloads; it applies categorically to all Virtual Networks in scope.",
+      "severity": "MEDIUM",
+      "title": "VNet configured with public DNS server in violation of NET-002",
+      "description": "The azurerm_virtual_network.vnet resource sets dns_servers = [\"8.8.8.8\"], directing all DNS resolution within the VNet to a public Google resolver. Policy NET-002 requires Virtual Networks to use Azure DNS or internal DNS only and does not permit public DNS servers regardless of workload type. The inline comment explicitly acknowledges this is deliberate ('TC06: Deliberately use a public DNS resolver for testing'), confirming it is not an oversight. Using a public DNS server exposes DNS queries to an external party and can undermine private endpoint DNS resolution — in this configuration, DNS responses for privatelink zones may be returned by 8.8.8.8 rather than the configured private DNS zones, potentially redirecting private endpoint traffic to public Azure endpoints.",
+      "evidence": "azurerm_virtual_network.vnet in terraform/network.tf: dns_servers = [\"8.8.8.8\"] with inline comment '# TC06: Deliberately use a public DNS resolver for testing.'",
+      "impact": "All DNS queries from resources in this VNet are forwarded to the public internet resolver 8.8.8.8. Private DNS zone records configured for privatelink.monitor.azure.com and companion zones (azurerm_private_dns_zone_virtual_network_link resources in nsg.tf) resolve correctly only when Azure DNS (168.63.129.16) is used as the resolver; overriding with 8.8.8.8 means the private endpoint DNS entries may not be returned, and monitor/log agent traffic may traverse the public endpoint instead of the private link. This also violates NET-002.",
+      "recommendation": "Remove the dns_servers attribute or set it to the Azure-provided resolver. To use Azure DNS: remove the dns_servers line entirely (Azure DNS is used by default) or set dns_servers = []. If a custom internal resolver is required, point to an internal IP that forwards to 168.63.129.16. This restores correct private DNS zone resolution for the AMPLS private endpoint and satisfies NET-002."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "NET-002",
+      "policy_name": "Virtual Networks must NOT use public DNS servers. Use Azure DNS or internal DNS only.",
+      "severity": "MEDIUM"
+    }
+  ],
+  "positives": [
+    "NET-001 satisfied: azurerm_subnet_network_security_group_association.subnet associates the NSG (nsg-demo-ai) with the subnet, ensuring all subnet traffic is governed by the NSG.",
+    "NET-003 not applicable: The VNet comment and main.tf tags establish this as a research workload (environment=research, research_case=PROM06-TC01). NET-003 explicitly exempts non-production workloads from the DDoS Protection Standard requirement.",
+    "Strong NSG posture: nsg.tf defines explicit DenyAllInbound and DenyAllOutbound rules at priority 4096, evaluated before Azure's default allow rules (65000/65001), providing an intentional deny-all baseline.",
+    "Default outbound access disabled: azurerm_subnet.subnet sets default_outbound_access_enabled = false, correctly restricting implicit outbound internet access at the subnet level.",
+    "TAG-001 satisfied: All taggable resources (resource group, VNet, NSG, Log Analytics workspace, AMPLS, private endpoint, private DNS zones, and VNet links) carry the mandatory tags environment, owner, and cost-center via local.common_tags. The subnet correctly notes it does not support tags.",
+    "LOG-001 satisfied: azurerm_monitor_diagnostic_setting.nsg enables both NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter log categories and forwards them to the Log Analytics workspace. Monitoring uses private ingestion (internet_ingestion_enabled = false) via AMPLS with a private endpoint.",
+    "SEC-001 satisfied: No public IP, public load balancer, or internet-facing service is provisioned. The Log Analytics workspace disables internet ingestion and queries; all monitor traffic is routed through a private endpoint and AMPLS.",
+    "Local authentication disabled on Log Analytics workspace (local_authentication_enabled = false) enforces Azure AD-only access, reducing credential-based attack surface."
+  ],
+  "final_recommendation": "One confirmed policy violation requires remediation before merge: remove or replace the public DNS server (8.8.8.8) in azurerm_virtual_network.vnet to comply with NET-002 and to ensure private endpoint DNS resolution functions correctly for the AMPLS monitoring path. All other reviewed controls — NSG association, deny-all NSG rules, disabled default outbound access, tagging, diagnostic logging, and private monitoring configuration — are correctly implemented for this research workload.",
+  "operational_score": 85,
+  "verdict": "APPROVE",
+  "risk_level": "LOW",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

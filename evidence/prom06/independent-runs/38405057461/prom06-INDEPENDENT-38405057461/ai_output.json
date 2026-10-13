@@ -1,0 +1,71 @@
+{
+  "summary": "The changed file terraform/storage.tf introduces an Azure Storage Account (azurerm_storage_account.tc07_storage) with two confirmed issues: TLS 1.0 is explicitly configured as the minimum TLS version, which is a current security weakness, and the resource is missing mandatory tags required by TAG-001 (owner and cost-center are absent). No public exposure is demonstrated beyond what Azure Storage defaults to, but the absence of network access restrictions is noted as context-dependent given no private endpoint or network_rules block is configured.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The storage account explicitly sets min_tls_version = 'TLS1_0', enabling TLS 1.0 and TLS 1.1 connections. TLS 1.0 and 1.1 are deprecated protocols with known vulnerabilities (POODLE, BEAST, etc.). This is a concrete, demonstrable security weakness in the supplied code regardless of workload classification.",
+      "severity": "HIGH",
+      "title": "Storage account allows deprecated TLS 1.0 connections",
+      "description": "The storage account 'prom06tc07storage' is configured with min_tls_version = \"TLS1_0\", which permits clients to connect using TLS 1.0 and TLS 1.1. Both versions have known cryptographic weaknesses and are deprecated by Microsoft. The Azure platform default and security best practice is TLS1_2.",
+      "evidence": "azurerm_storage_account.tc07_storage: min_tls_version = \"TLS1_0\" in terraform/storage.tf.",
+      "impact": "Clients can negotiate TLS 1.0 or 1.1 connections to this storage account, exposing data in transit to protocol-level attacks such as POODLE and BEAST. This affects confidentiality and integrity of data transferred to and from the storage account.",
+      "recommendation": "Set min_tls_version = \"TLS1_2\" in the azurerm_storage_account resource. TLS 1.2 is the minimum acceptable version and is the Azure platform default for new storage accounts."
+    },
+    {
+      "id": "F-002",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy TAG-001 requires all taggable Azure resources to include mandatory tags: environment, owner, and cost-center. The storage account's tags block contains only 'Environment' and 'TestCase', omitting both 'owner' and 'cost-center'. This is a direct, verifiable violation of the supplied policy.",
+      "severity": "LOW",
+      "title": "Storage account missing mandatory tags: owner and cost-center",
+      "description": "The azurerm_storage_account.tc07_storage resource includes a tags block with 'Environment' and 'TestCase' keys only. The mandatory 'owner' and 'cost-center' tags required by TAG-001 are absent. The policy explicitly states that research deployments should use documented research values for these keys. Additionally, the tag key casing ('Environment' vs. the policy-specified 'environment') is inconsistent with the common_tags convention used elsewhere in the repository, though the primary violation is the missing required keys.",
+      "evidence": "azurerm_storage_account.tc07_storage tags block in terraform/storage.tf: tags = { Environment = \"Research\", TestCase = \"TC07\" }. Required keys 'owner' and 'cost-center' are not present. Policy TAG-001 in ai/policy.md mandates environment, owner, and cost-center on all taggable resources.",
+      "impact": "Resources without mandatory tags cannot be correctly attributed for cost tracking, ownership, or security governance, violating the organizational tagging policy.",
+      "recommendation": "Add the missing mandatory tags to the storage account. Following the pattern in local.common_tags (terraform/main.tf), the tags block should include at minimum: environment = \"research\", owner = \"<team or owner value>\", cost-center = \"<cost center value>\". Also align tag key casing with the repository convention (lowercase keys)."
+    },
+    {
+      "id": "F-003",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "The storage account has no network_rules block and no private endpoint configured in the changed file. By default, Azure Storage Accounts allow access from all networks. Whether this represents a violation of SEC-001 or an unacceptable exposure depends on whether this storage account is intended to be publicly accessible and whether there are compensating controls (e.g., a private endpoint, network rules, or SAS-only access) deployed outside the supplied Terraform. The file does not reference the existing VNet or subnet, and the resource group 'rg-prom06-tc07' differs from the network resource group 'rg-network-demo-ai', suggesting this may be a separate deployment context not fully represented in the supplied files.",
+      "severity": "MEDIUM",
+      "title": "Storage account may permit public network access with no network restrictions configured",
+      "description": "The azurerm_storage_account.tc07_storage resource does not include a network_rules block and no private endpoint for this storage account is defined in the supplied Terraform. The Azure default is to allow public network access from all networks. If this storage account is intended to be private or network-restricted, the absence of network_rules or a private endpoint is a security gap. The resource group name 'rg-prom06-tc07' is different from the network infrastructure group, so it is unknown whether additional controls exist in a separate configuration.",
+      "evidence": "azurerm_storage_account.tc07_storage in terraform/storage.tf: no network_rules block present, no azurerm_private_endpoint referencing this storage account in the supplied files, resource_group_name = 'rg-prom06-tc07' (distinct from the network RG 'rg-network-demo-ai' defined in terraform/network.tf).",
+      "impact": "If no external network controls or private endpoint exist for this storage account, it is reachable from the public internet, which would violate SEC-001 unless public access is explicitly required and justified.",
+      "recommendation": "Confirm whether this storage account requires public access. If not, add a network_rules block with default_action = \"Deny\" and appropriate ip_rules or virtual_network_subnet_ids, or configure a private endpoint. If public access is intentionally required, document the justification per SEC-001."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    },
+    {
+      "finding_id": "F-002",
+      "policy_id": "TAG-001",
+      "policy_name": "Mandatory resource tagging: environment, owner, cost-center",
+      "severity": "LOW"
+    }
+  ],
+  "positives": [
+    "The storage account uses Standard tier with LRS replication, which is appropriate for a research workload.",
+    "The broader repository demonstrates strong network security posture: NSG with explicit deny-all inbound and outbound rules, private-only Log Analytics workspace with AMPLS and private endpoint, and disabled default outbound access on the subnet.",
+    "The NSG diagnostic settings correctly forward NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter logs to the Log Analytics workspace, satisfying LOG-001 for the NSG resource."
+  ],
+  "final_recommendation": "Two confirmed issues require remediation before merge: (1) change min_tls_version to TLS1_2 to eliminate deprecated protocol exposure, and (2) add the missing 'owner' and 'cost-center' mandatory tags per TAG-001. Additionally, clarify and document the intended network access posture for this storage account—if public access is not required, add network_rules with default_action = Deny or configure a private endpoint to satisfy SEC-001.",
+  "operational_score": 65,
+  "verdict": "DO_NOT_MERGE",
+  "risk_level": "HIGH",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

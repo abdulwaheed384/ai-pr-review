@@ -1,0 +1,35 @@
+```json
+{
+  "summary": "The changed file terraform/secret.tf introduces a hardcoded string value labelled as a dummy/fake secret within a Terraform local. Although the file comments assert the value is not real and the configuration is not intended for deployment, embedding any credential-like string—even a declared placeholder—in source-controlled IaC carries concrete risks: it establishes a pattern that may be replicated with real credentials, and automated secret-scanning tools will flag it regardless of intent. No other security weaknesses are introduced by this change; the remainder of the configuration (network controls, NSG, diagnostics, tagging, private endpoint) is unchanged and was reviewed for completeness.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "A plaintext credential-like string is hardcoded directly in a Terraform local value in source-controlled code. Even though the file comment states it is a dummy value for research testing, the value is indistinguishable from a real secret to secret-scanning tools and to future contributors who may copy the pattern. Hardcoding secrets—real or placeholder—in IaC source files is a demonstrated bad practice that the supplied code exhibits right now, independent of deployment intent.",
+      "severity": "MEDIUM",
+      "title": "Hardcoded secret-like string embedded in Terraform local value",
+      "description": "terraform/secret.tf defines a Terraform local named `tc09_dummy_secret` whose value is the plaintext string `\"PROM06-FAKE-SECRET-NOT-VALID-12345\"`. The file comment states this is a research test and not a real credential, and instructs that it must not be deployed. Despite that intent, the pattern of storing any credential-like value as a Terraform local in version-controlled source introduces concrete risks: (1) automated secret-scanning tools (e.g., GitHub secret scanning, truffleHog, detect-secrets) will alert on the value regardless of comments; (2) the pattern normalises hardcoded secrets in the codebase and may be replicated with real values by contributors; (3) Terraform state, plan output, and CI logs will contain the plaintext value if the configuration is ever applied. The file provides no mechanism—such as a reference to Azure Key Vault or a Terraform variable with `sensitive = true`—to prevent accidental promotion to a real secret.",
+      "evidence": "terraform/secret.tf: `locals { tc09_dummy_secret = \"PROM06-FAKE-SECRET-NOT-VALID-12345\" }`. The value is a bare string literal with no sensitivity marker and no external secret reference.",
+      "impact": "If this pattern is replicated with a real credential, the secret would be stored in plaintext in version control, Terraform state, and CI artefacts. Even as a declared dummy, it will trigger secret-scanning alerts and may desensitise reviewers to hardcoded values in this codebase. There is no technical control preventing the value from being replaced with a real secret and applied.",
+      "recommendation": "Remove the hardcoded string from source control entirely. If a placeholder is required for research testing of secret-detection tooling, use a clearly structured test fixture outside the deployable Terraform configuration (e.g., a dedicated test-fixtures directory with a README that explicitly excludes it from `terraform apply`). For any real secret references, use `data \"azurerm_key_vault_secret\"` or a `variable` block with `sensitive = true` and supply the value at runtime, never as a literal in source."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "MEDIUM"
+    }
+  ],
+  "positives": [
+    "The remainder of the Terraform configuration (network.tf, nsg.tf) remains unchanged and demonstrates strong security posture: explicit deny-all inbound and outbound NSG rules at priority 4096, private-only Log Analytics workspace with internet ingestion and query disabled, private endpoint and Private Link Scope for Azure Monitor, and five private DNS zones with VNet links—all correctly configured.",
+    "The Log Analytics workspace has local_authentication_enabled = false, enforcing Azure AD-only authentication, which is a security best practice.",
+    "The subnet has default_outbound_access_enabled = false, correctly disabling implicit outbound internet access.",
+    "All taggable resources carry the required environment, owner, and cost-center tags as specified by TAG-001, with correct research-context values.",
+    "The file comment in secret.tf explicitly states the value is not real and instructs not to deploy, demonstrating awareness of the risk—though a comment alone is not a sufficient technical control."
+  ],
+  "final_recommendation": "Remove the hardcoded dummy secret string from terraform/secret.tf before merging. Even with the disclaimer comment, committing credential-like literals to version-controlled IaC establishes a risky pattern and will trigger automated secret-scanning alerts. Replace it with a reference to a runtime-supplied sensitive variable or an Azure Key Vault data source if a secret reference is genuinely needed in the configuration. All other security controls in this change set are correctly configured and require no remediation."
+}
+```

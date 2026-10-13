@@ -1,0 +1,52 @@
+```json
+{
+  "summary": "The changed file tc12_https.tf adds an NSG rule (priority 300) that permits inbound TCP/443 from any source to any destination within the NSG. The rule is explicitly documented as intentional for a public web endpoint test fixture. The broader configuration (nsg.tf, network.tf) establishes a deny-all baseline at priority 4096 and a research workload context. The HTTPS allow rule is the sole security-relevant change; it is assessed against the supplied policy and configuration context.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "SEC-001 requires that public exposure be explicitly required and justified. The file comment states the rule is intentional and documents a public web endpoint ground truth, which partially satisfies the justification requirement. However, the destination_address_prefix is '*' rather than a specific resource IP or prefix, meaning the allow rule applies to all addresses reachable through the NSG — not just the intended endpoint. Whether this broad destination scope is appropriate depends on whether any other resources beyond the intended web endpoint share this NSG, which is not established by the supplied files.",
+      "severity": "MEDIUM",
+      "title": "AllowPublicHTTPS-TC12 rule uses wildcard destination address prefix",
+      "description": "The NSG rule 'AllowPublicHTTPS-TC12' (priority 300) sets destination_address_prefix = '*', which permits inbound TCP/443 from any source to any destination associated with this NSG. The source_address_prefix = '*' is expected for a public HTTPS endpoint. However, the wildcard destination means that if any additional resources are placed behind this NSG in future, they will also receive unrestricted public HTTPS ingress without a separate rule change. The current configuration supplies no other resources attached to the NSG beyond the subnet in network.tf, so actual exposure today may be limited, but the destination scope is broader than the minimum required.",
+      "evidence": "azurerm_network_security_rule.tc12_public_https: destination_address_prefix = '*', source_address_prefix = '*', destination_port_range = '443', priority = 300, direction = 'Inbound', access = 'Allow'. NSG referenced: azurerm_network_security_group.nsg (nsg.tf). No other compute resources are defined in the supplied Terraform files.",
+      "impact": "If additional resources are associated with the same NSG, they inherit unrestricted public TCP/443 ingress. For the current research fixture with no attached compute, direct impact is limited, but the rule scope exceeds the minimum needed for a single named endpoint.",
+      "recommendation": "Where the intended public endpoint has a known private IP or is a specific Azure resource, narrow destination_address_prefix to that IP or prefix (e.g., the private IP of the web server or a /32). If the NSG is intentionally shared and the broad destination is acceptable, document this explicitly in the rule description and obtain a documented risk acceptance."
+    },
+    {
+      "id": "F-002",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "A superficial reading might flag the public inbound allow rule as a SEC-001 violation because it opens TCP/443 from any source. However, the file header explicitly states 'Ground truth: public TCP/443 ingress is intentional for the documented public web endpoint' and the rule description repeats this justification. SEC-001 permits public exposure when explicitly required and justified. The workload is tagged environment=research and the file notes 'Research-only test fixture. Do not deploy.' The intentional and documented nature of this exposure, combined with the deny-all baseline at priority 4096, means this does not constitute an unjustified SEC-001 violation based on supplied evidence.",
+      "severity": "INFORMATIONAL",
+      "title": "Public inbound HTTPS rule is explicitly justified — not a SEC-001 violation",
+      "description": "The AllowPublicHTTPS-TC12 rule opens TCP/443 inbound from any source. SEC-001 prohibits unjustified public exposure; however, the rule's comment block and description field both document that public HTTPS ingress is the intended behavior for this test case. The deny-all NSG rules at priority 4096 remain in effect for all other traffic. This is classified as a false positive on the SEC-001 framing.",
+      "evidence": "azurerm_network_security_rule.tc12_public_https: description = 'TC12 test: public HTTPS is required for the intended public web endpoint.' File header: 'Ground truth: public TCP/443 ingress is intentional for the documented public web endpoint.' NSG deny-all rules in nsg.tf at priority 4096 cover all other traffic.",
+      "impact": "No additional impact beyond F-001. The public exposure is documented and intentional.",
+      "recommendation": "No action required for the SEC-001 framing. See F-001 for the narrower destination prefix recommendation."
+    },
+    {
+      "id": "F-003",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "TAG-001 requires mandatory tags on all taggable resources. The azurerm_network_security_rule resource type in the AzureRM provider does not support a tags argument; tags are applied at the parent NSG level (azurerm_network_security_group.nsg carries local.common_tags in nsg.tf). Reporting a missing tags block on this resource would be incorrect.",
+      "severity": "INFORMATIONAL",
+      "title": "azurerm_network_security_rule does not support tags — TAG-001 not applicable",
+      "description": "TAG-001 applies to taggable Azure resources. The azurerm_network_security_rule resource type does not expose a tags argument in the AzureRM provider; tagging is managed at the parent NSG resource level. The parent NSG (azurerm_network_security_group.nsg) already carries local.common_tags including environment, owner, and cost-center.",
+      "evidence": "azurerm_network_security_rule.tc12_public_https: no tags argument defined or supported. azurerm_network_security_group.nsg in nsg.tf: tags = local.common_tags (includes environment, owner, cost-center, research_case).",
+      "impact": "No tagging gap. TAG-001 is satisfied at the NSG level.",
+      "recommendation": "No action required."
+    }
+  ],
+  "policy_violations": [],
+  "positives": [
+    "The deny-all inbound and outbound NSG rules at priority 4096 (nsg.tf) establish a strong default-deny baseline. The AllowPublicHTTPS-TC12 rule at priority 300 is the only custom allow, limiting the attack surface to TCP/443.",
+    "The rule includes a description field that documents the TC12 ground truth and business justification, satisfying the documentation aspect of SEC-001.",
+    "The workload is consistently tagged as environment=research across all resources, correctly scoping policy applicability (e.g., NET-003 DDoS Protection Standard is not required).",
+    "The Log Analytics workspace uses local_authentication_enabled=false, internet_ingestion_enabled=false, and internet_query_enabled=false, and is connected via Private Link Scope and private endpoint — appropriate for a research environment.",
+    "default_outbound_access_enabled=false on the subnet (network.tf) disables implicit outbound internet access, consistent with the deny-all NSG posture."
+  ],
+  "final_recommendation": "The primary actionable concern (F-001) is the wildcard destination_address_prefix on the public HTTPS rule. Narrowing it to the specific intended endpoint IP or prefix would reduce the blast radius if additional resources are later attached to the NSG. F-002 and F-003 are false positives: the public exposure is documented and intentional (SEC-001 satisfied), and NSG rules do not support tags (TAG-001 not applicable). No policy violations are confirmed. The configuration demonstrates sound defense-in-depth for a research fixture."
+}
+```

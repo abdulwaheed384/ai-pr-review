@@ -1,0 +1,46 @@
+{
+  "summary": "The changed file (terraform/network.tf) introduces a VNet, subnet, and NSG association for a research workload (PROM06-TC01). The subnet is correctly associated with an NSG and has default outbound access disabled. One confirmed policy violation is present: the VNet is configured to use a public DNS resolver (8.8.8.8), which violates policy NET-002. All other controls reviewed — tagging, NSG association, DDoS exemption, logging, and private endpoint configuration — are either compliant or correctly scoped to a research workload.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy NET-002 explicitly prohibits the use of public DNS servers on Virtual Networks, requiring Azure DNS or internal DNS instead. The Terraform configuration for azurerm_virtual_network.vnet sets dns_servers to [\"8.8.8.8\"], which is a public Google DNS resolver. The inline comment ('TC06: Deliberately use a public DNS resolver for testing.') acknowledges the deviation but does not constitute a policy exemption; no supplied policy or documentation grants an exception for this control based on research workload status. NET-002 contains no non-production carve-out, unlike NET-003.",
+      "severity": "MEDIUM",
+      "title": "VNet configured with public DNS resolver in violation of NET-002",
+      "description": "The azurerm_virtual_network.vnet resource sets dns_servers = [\"8.8.8.8\"], routing all VNet DNS queries to a public Google resolver. Policy NET-002 requires Virtual Networks to use Azure DNS or internal DNS only, with no exception for research or non-production workloads. Using a public DNS resolver exposes DNS query content to a third-party service, prevents private DNS zone resolution (including the five privatelink zones linked to this VNet for the AMPLS private endpoint), and may cause DNS leakage of internal resource names. The inline comment labels this as intentional for test case TC06, but no policy waiver or exception mechanism is documented in the supplied context.",
+      "evidence": "azurerm_virtual_network.vnet in terraform/network.tf: dns_servers = [\"8.8.8.8\"]. Policy NET-002: 'Virtual Networks must NOT use public DNS servers. Use Azure DNS or internal DNS only.'",
+      "impact": "DNS queries from resources in this VNet are forwarded to 8.8.8.8 instead of Azure's recursive resolver. This bypasses the private DNS zones configured for the AMPLS private endpoint (privatelink.monitor.azure.com, privatelink.oms.opinsights.azure.com, etc.), which means the private endpoint DNS resolution may fail or fall back to public endpoints, potentially defeating the private-only ingestion and query access modes configured on the Log Analytics workspace. It also exposes DNS query metadata to Google's public resolver infrastructure.",
+      "recommendation": "Remove the dns_servers attribute from azurerm_virtual_network.vnet to inherit Azure's default recursive resolver (168.63.129.16), which honours the private DNS zone links configured in the VNet. If a custom resolver is required, use an Azure-hosted private resolver or an internal forwarder. If TC06 specifically requires a public DNS resolver for a documented test objective, seek a formal policy exemption and document it in the repository alongside the test case rationale."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "NET-002",
+      "policy_name": "No Public DNS Servers on Virtual Networks",
+      "severity": "MEDIUM"
+    }
+  ],
+  "positives": [
+    "NET-001 compliance: azurerm_subnet_network_security_group_association.subnet correctly associates azurerm_network_security_group.nsg with azurerm_subnet.subnet, satisfying the requirement that all subnets must have an NSG.",
+    "NSG posture: nsg.tf defines explicit DenyAllInbound and DenyAllOutbound rules at priority 4096, which are evaluated before Azure's default allow rules (65000/65001), providing a strong deny-all baseline with no inbound or outbound traffic permitted by default.",
+    "Default outbound access disabled: azurerm_subnet.subnet sets default_outbound_access_enabled = false, preventing implicit outbound internet access from the subnet independent of NSG rules.",
+    "NET-003 correctly exempted: The VNet comment and the research workload tags (environment = 'research') establish that this is a non-production workload; policy NET-003 explicitly excludes research workloads from the DDoS Protection Standard requirement.",
+    "TAG-001 compliance: All taggable resources (resource group, VNet, NSG, Log Analytics workspace, AMPLS, private endpoint, private DNS zones, and VNet links) carry the required environment, owner, and cost-center tags via local.common_tags, plus the research_case identifier. The subnet comment correctly notes that subnets do not support Azure resource tags.",
+    "LOG-001 compliance: azurerm_monitor_diagnostic_setting.nsg enables both supported NSG diagnostic categories (NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter) and forwards them to the Log Analytics workspace. The subnet is correctly identified as not independently targetable for diagnostics.",
+    "Private and authenticated Log Analytics: The workspace disables local authentication (local_authentication_enabled = false), public internet ingestion (internet_ingestion_enabled = false), and public query access (internet_query_enabled = false), with access gated through a Private Link Scope and private endpoint — consistent with SEC-001.",
+    "SEC-001 compliance: No public IP addresses, public-facing load balancers, or internet-exposed resources are provisioned. The AMPLS is configured with PrivateOnly ingestion and query access modes."
+  ],
+  "final_recommendation": "Address F-001 by removing the public DNS server configuration from azurerm_virtual_network.vnet. The remainder of the network configuration demonstrates a well-structured, defence-in-depth research environment: deny-all NSG rules, disabled default outbound access, private-only monitoring via AMPLS and private endpoint, and comprehensive tagging. Note that the public DNS configuration may also impair the function of the private DNS zones linked to this VNet, which are required for correct resolution of the AMPLS private endpoint FQDNs.",
+  "operational_score": 85,
+  "verdict": "APPROVE",
+  "risk_level": "LOW",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

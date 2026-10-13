@@ -1,0 +1,57 @@
+{
+  "summary": "The changed file tc12_https.tf adds an NSG security rule (priority 300) that permits inbound TCP/443 from any source to any destination within the NSG-associated subnet. The rule is documented as an intentional public HTTPS endpoint for a research test case (TC12). The broader baseline configuration (nsg.tf, network.tf) is well-controlled: deny-all inbound/outbound at priority 4096, private-only Log Analytics with AMPLS, subnet NSG association, and disabled default outbound access. One confirmed finding applies: the new rule lacks the mandatory tags required by TAG-001. The public HTTPS exposure is documented as intentional and justified in the resource description and file comment, so SEC-001 is assessed below.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "TAG-001 requires all taggable Azure resources to include the mandatory tags: environment, owner, cost-center. The azurerm_network_security_rule resource supports tags and none are configured. This is a direct policy violation with clear Terraform evidence.",
+      "severity": "LOW",
+      "title": "NSG security rule tc12_public_https is missing mandatory tags (TAG-001)",
+      "description": "The resource azurerm_network_security_rule.tc12_public_https does not include any tags block. Policy TAG-001 requires every taggable Azure resource to carry the mandatory tags: environment, owner, and cost-center. All other taggable resources in the repository (azurerm_network_security_group, azurerm_virtual_network, azurerm_resource_group, etc.) correctly reference local.common_tags. This resource is an outlier.",
+      "evidence": "resource \"azurerm_network_security_rule\" \"tc12_public_https\" in terraform/tc12_https.tf — no tags argument is present. local.common_tags is defined in terraform/main.tf and applied to all other taggable resources across network.tf and nsg.tf.",
+      "impact": "The resource cannot be attributed to its cost-center or owner through standard Azure tag-based governance tooling, creating an accountability and cost-tracking gap consistent with the TAG-001 policy requirement.",
+      "recommendation": "Add tags = local.common_tags (or a TC12-specific tags map that includes environment, owner, and cost-center) to the azurerm_network_security_rule.tc12_public_https resource block."
+    },
+    {
+      "id": "F-002",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "SEC-001 requires that no resource be publicly exposed unless explicitly required and justified. The rule explicitly documents its intent ('public HTTPS is required for the intended public web endpoint') and carries a 'Do not deploy' research-fixture notice. However, the rule uses destination_address_prefix = \"*\", which covers all IPs in the subnet rather than a specific resource. Whether a specific destination IP or prefix should be scoped is a design question dependent on whether a backend resource is deployed in this subnet.",
+      "severity": "LOW",
+      "title": "Public HTTPS rule uses wildcard destination address prefix — scope unknown",
+      "description": "azurerm_network_security_rule.tc12_public_https sets destination_address_prefix = \"*\", meaning the allow rule applies to all addresses within the NSG-associated subnet (10.0.1.0/24), not just a specific backend endpoint. The file comment and description field document that public TCP/443 ingress is intentional for a public web endpoint, satisfying the SEC-001 justification requirement in principle. However, if the intended public service has a known IP or will be deployed to a specific host, scoping the destination reduces the blast radius. No backend resource is provisioned in the supplied Terraform, so the appropriate destination cannot be confirmed.",
+      "evidence": "resource \"azurerm_network_security_rule\" \"tc12_public_https\" in terraform/tc12_https.tf: destination_address_prefix = \"*\". No backend VM, App Service, or load balancer resource is present in the supplied configuration files.",
+      "impact": "If additional resources are later deployed into the subnet, they will all be reachable on TCP/443 from the public internet, which may exceed the intended exposure scope.",
+      "recommendation": "When a specific backend resource with a known private IP is deployed, narrow destination_address_prefix to that IP or CIDR. Until then, confirm whether the wildcard destination is intentional for this research fixture. If this rule is strictly a test case, ensure it is gated by the 'Do not deploy' control described in the file comment."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "TAG-001",
+      "policy_name": "Mandatory resource tagging",
+      "severity": "LOW"
+    }
+  ],
+  "positives": [
+    "The NSG baseline (nsg.tf) enforces explicit deny-all inbound and outbound rules at priority 4096, running before Azure's default allow rules (65000/65001), providing a strong restrictive default posture.",
+    "The new TC12 HTTPS rule at priority 300 correctly integrates with the priority ordering: it permits only TCP/443 inbound and remains subject to the deny-all baseline for all other traffic directions and ports.",
+    "The subnet has default_outbound_access_enabled = false, eliminating implicit outbound internet paths not covered by NSG rules.",
+    "Log Analytics is configured with local_authentication_enabled = false, internet_ingestion_enabled = false, and internet_query_enabled = false, enforced through a private endpoint with AMPLS in PrivateOnly mode for both ingestion and query — a strong private-only observability posture.",
+    "NSG diagnostic logs (NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter) are collected to the private Log Analytics workspace, satisfying LOG-001 for the NSG resource.",
+    "The public HTTPS rule carries an explicit description and file-level comment justifying and scoping the exposure ('TC12 test: public HTTPS is required for the intended public web endpoint'), meeting the documentation expectation of SEC-001.",
+    "The research-only workload designation is consistently applied: environment tag is 'research', NET-003 DDoS Standard is correctly excluded, and the 'Do not deploy' notice is present in the file."
+  ],
+  "final_recommendation": "Add tags = local.common_tags to the azurerm_network_security_rule.tc12_public_https resource to satisfy TAG-001. Optionally, confirm whether the wildcard destination_address_prefix is appropriate for this research fixture or whether it should be scoped to a specific backend IP when a backend resource is provisioned. No other confirmed security weaknesses were identified in the changed file or in the broader baseline configuration supplied.",
+  "operational_score": 95,
+  "verdict": "APPROVE",
+  "risk_level": "LOW",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

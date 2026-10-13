@@ -1,0 +1,37 @@
+```json
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces an NSG with a deliberate, commented security test condition (TC02): an SSH allow rule that permits inbound TCP port 22 from any source (0.0.0.0/0). This is the sole confirmed security weakness. The remainder of the configuration demonstrates strong controls: explicit deny-all inbound and outbound rules, private-only Log Analytics workspace with AMPLS, private endpoint with full DNS integration, NSG diagnostic logging, and consistent tagging across all taggable resources. The research workload context (environment=research, TC01) is established by multiple sources and exempts DDoS Protection Standard per NET-003.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The NSG security_rule 'AllowSSH' explicitly permits inbound TCP port 22 from source_address_prefix '0.0.0.0/0' to any destination at priority 300, which is evaluated before the DenyAllInbound rule at priority 4096. This exposes SSH on any attached resource to the entire internet. The inline comment '# TC02: Deliberately unrestricted SSH access' acknowledges this is intentional for the test case, but it constitutes a concrete, demonstrable security weakness in the deployed configuration regardless of research intent.",
+      "severity": "HIGH",
+      "title": "NSG permits inbound SSH (TCP/22) from any source (0.0.0.0/0)",
+      "description": "The 'AllowSSH' security rule in azurerm_network_security_group.nsg grants inbound access on TCP port 22 from all IP addresses (source_address_prefix = '0.0.0.0/0') at priority 300. Because lower numeric priorities are evaluated first in Azure NSGs, this rule takes precedence over the 'DenyAllInbound' rule at priority 4096, meaning any host on the internet can attempt SSH connections to resources associated with this NSG. The TC02 comment documents this as deliberate, but the configuration still represents an unrestricted public exposure of a sensitive administrative port.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowSSH': priority = 300, direction = 'Inbound', access = 'Allow', protocol = 'Tcp', destination_port_range = '22', source_address_prefix = '0.0.0.0/0'. The DenyAllInbound rule at priority 4096 does not block traffic matched by this earlier rule.",
+      "impact": "Any internet host can initiate TCP connections to port 22 on resources in subnet-demo (10.0.1.0/24) that are associated with nsg-demo-ai. If any VM or other SSH-capable resource is attached to this subnet, it is exposed to brute-force, credential stuffing, and exploitation of SSH vulnerabilities from the entire internet.",
+      "recommendation": "Restrict source_address_prefix to a known management IP range or a private CIDR (e.g., the VNet address space '10.0.0.0/16') rather than '0.0.0.0/0'. If internet-reachable SSH is required by the test case, document the compensating controls (e.g., key-only authentication, fail2ban, no VM currently attached) and set a planned expiry. Remove or restrict the rule when TC02 testing is complete. Per SEC-001, public exposure must be explicitly required and justified."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "Explicit deny-all inbound and outbound NSG rules at priority 4096 provide a defense-in-depth baseline beyond Azure's default deny, and the subnet has default_outbound_access_enabled = false, further restricting unintended egress.",
+    "The Log Analytics workspace enforces local_authentication_enabled = false, internet_ingestion_enabled = false, and internet_query_enabled = false, preventing public access to monitoring data.",
+    "AMPLS (azurerm_monitor_private_link_scope.network) is configured with ingestion_access_mode = 'PrivateOnly' and query_access_mode = 'PrivateOnly', and is connected to the workspace via a private endpoint with complete DNS zone integration for all five required Azure Monitor zones — a strong private-only observability posture.",
+    "NSG diagnostic settings collect both 'NetworkSecurityGroupEvent' and 'NetworkSecurityGroupRuleCounter' categories, satisfying LOG-001 for this resource type.",
+    "All taggable resources (NSG, VNet, resource group, Log Analytics workspace, AMPLS, private endpoint, DNS zones, DNS VNet links) carry the mandatory tags (environment, owner, cost-center) plus the research_case identifier, satisfying TAG-001.",
+    "NET-001 is satisfied: azurerm_subnet_network_security_group_association.subnet associates the NSG with subnet-demo. NET-003 DDoS Protection Standard is correctly omitted for this research workload as documented in network.tf and policy.",
+    "The VNet uses an empty dns_servers list (Azure DNS) rather than public resolvers, satisfying NET-002."
+  ],
+  "final_recommendation": "One confirmed HIGH-severity finding requires remediation before this configuration is applied to any environment where a VM or other SSH-capable resource may be attached to the subnet: the AllowSSH rule must have its source restricted from 0.0.0.0/0 to a known management range. All other controls in this change are well-implemented; the private observability stack, explicit outbound deny posture, and tagging compliance are particularly strong. If TC02 intentionally requires public SSH for a bounded test window, the justification should be formally recorded and a rule removal task tracked."
+}
+```

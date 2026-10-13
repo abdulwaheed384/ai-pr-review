@@ -1,0 +1,46 @@
+{
+  "summary": "The changed file terraform/nsg.tf introduces a Network Security Group with an intentional inbound HTTP (TCP/80) allow rule open to all IPv4 addresses (0.0.0.0/0), documented under test case TC04. The broader configuration demonstrates strong security posture: explicit deny-all inbound/outbound baseline rules, subnet default outbound access disabled, private-only Log Analytics workspace with AMPLS and private endpoint, NSG diagnostic logs enabled, and consistent mandatory tagging. One confirmed finding is raised for the public HTTP exposure, which is a current demonstrable weakness regardless of its stated testing purpose. All other controls are assessed as correctly configured for a research workload.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The NSG rule 'AllowHTTP' explicitly permits unrestricted inbound TCP/80 from any IPv4 source (source_address_prefix = '0.0.0.0/0') at priority 302, which is evaluated before the DenyAllInbound rule at priority 4096. This is a concrete, demonstrable configuration that exposes any resource in the associated subnet to public HTTP traffic. The TC04 comment acknowledges it is 'deliberately public' for security testing, but the configuration as committed represents a real current exposure. Policy SEC-001 requires justification for public exposure; the inline comment provides an intent note but does not constitute a formal access-control boundary or time-limited control.",
+      "severity": "HIGH",
+      "title": "NSG rule permits unrestricted inbound HTTP (TCP/80) from any IPv4 source",
+      "description": "The security rule 'AllowHTTP' in azurerm_network_security_group.nsg is configured with source_address_prefix = '0.0.0.0/0', destination_port_range = '80', access = 'Allow', and priority = 302 (Inbound). Because NSG rules are evaluated in ascending priority order, this rule is processed before the explicit DenyAllInbound rule at priority 4096 and before Azure's default deny at priority 65500. Any resource attached to subnet-demo (10.0.1.0/24) via the azurerm_subnet_network_security_group_association is reachable on TCP/80 from the public internet. The TC04 annotation documents intent but does not scope or restrict the exposure to a controlled source range.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowHTTP': priority = 302, direction = 'Inbound', access = 'Allow', protocol = 'Tcp', destination_port_range = '80', source_address_prefix = '0.0.0.0/0'. Associated to subnet-demo via azurerm_subnet_network_security_group_association.subnet.",
+      "impact": "All resources deployed into subnet-demo (10.0.1.0/24) are reachable on TCP/80 from any internet source. Depending on what is deployed into the subnet, this could expose web services, management interfaces, or other HTTP-speaking workloads to unauthenticated public access and attack surface including scanning, exploitation, and data exfiltration over HTTP.",
+      "recommendation": "If public HTTP access is genuinely required for a time-bounded security test (TC04), restrict source_address_prefix to the specific IP range of the test client(s) rather than 0.0.0.0/0. Document an expiry date or a separate teardown PR for the rule. If the test has concluded or the rule is no longer needed, remove the 'AllowHTTP' security rule so the DenyAllInbound baseline applies. Do not merge a broad public-allow rule into a shared or persistent environment without a scoped source prefix and a documented, time-limited justification referencing a change ticket."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "Explicit deny-all baseline: Both DenyAllInbound (priority 4096) and DenyAllOutbound (priority 4096) rules are configured, providing defense-in-depth beyond Azure's default deny rules and enforcing a closed posture for all traffic not explicitly permitted.",
+    "Subnet default outbound access disabled: azurerm_subnet.subnet sets default_outbound_access_enabled = false, eliminating the Azure implicit outbound SNAT path and enforcing deliberate outbound routing.",
+    "NSG diagnostic logs enabled: azurerm_monitor_diagnostic_setting.nsg forwards both 'NetworkSecurityGroupEvent' and 'NetworkSecurityGroupRuleCounter' categories to the Log Analytics workspace, satisfying LOG-001 for the NSG resource.",
+    "Private-only Log Analytics workspace: azurerm_log_analytics_workspace.network sets internet_ingestion_enabled = false and internet_query_enabled = false, with local_authentication_enabled = false, preventing public data plane access and enforcing Azure AD authentication.",
+    "AMPLS with private endpoint and DNS: azurerm_monitor_private_link_scope.network enforces PrivateOnly ingestion and query access modes. A private endpoint (pe-ampls-prom06-tc01-uks) with all five required Azure Monitor Private DNS zones and VNet links is configured, providing a complete private connectivity path for monitoring.",
+    "Mandatory tagging applied: All taggable resources carry the required environment, owner, and cost-center tags via local.common_tags, with research_case = 'PROM06-TC01' as required by TAG-001 for a research deployment.",
+    "NET-001 satisfied: The subnet subnet-demo is associated with nsg-demo-ai via azurerm_subnet_network_security_group_association.subnet.",
+    "NET-003 correctly scoped: The absence of DDoS Protection Standard is acknowledged in network.tf with a comment referencing NET-003 and confirming TC01 is a research workload; the policy explicitly exempts non-production workloads."
+  ],
+  "final_recommendation": "The primary actionable change required before merging is to restrict or remove the 'AllowHTTP' NSG rule (F-001). If TC04 testing requires public HTTP access, scope source_address_prefix to specific test client IPs and add a time-limited justification with a linked change ticket. All other security controls in this configuration are correctly implemented for a research workload: the deny-all baseline, private monitoring stack, diagnostic log forwarding, tag compliance, and subnet outbound restriction are all well-configured.",
+  "operational_score": 70,
+  "verdict": "APPROVE_WITH_COMMENTS",
+  "risk_level": "MEDIUM",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

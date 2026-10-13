@@ -1,0 +1,35 @@
+```json
+{
+  "summary": "The changed files introduce a custom Azure role definition (TC11) scoped to the entire subscription with wildcard 'actions': ['*'], which grants every Azure control-plane operation across the subscription. The companion requirements file explicitly documents that the task requires only two specific read actions. This is a deliberately over-privileged role that constitutes a confirmed least-privilege violation. The research-only annotation and 'Do not deploy' comment are noted but do not negate the security weakness present in the code as written.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The Terraform code in tc11_iam.tf demonstrates a concrete security weakness: a custom role definition granting wildcard ('*') actions at subscription scope, while tc11_requirements.tf explicitly documents that only two specific read actions are required for the stated task. The gap between granted and required permissions is fully evidenced in the supplied files without needing additional context.",
+      "severity": "HIGH",
+      "title": "Custom role grants wildcard subscription-scope permissions far exceeding documented task requirements",
+      "description": "azurerm_role_definition.tc11_reporting_role defines a custom role with 'actions = [\"*\"]' and 'not_actions = []', scoped to the full subscription via data.azurerm_subscription.tc11_current.id. This grants every Azure Resource Manager control-plane action (read, write, delete, action) on every resource type across the entire subscription. The companion file tc11_requirements.tf explicitly states the task requires only 'Microsoft.Resources/subscriptions/resourceGroups/read' and 'Microsoft.Resources/subscriptions/resources/read'. The role as defined exceeds the minimum required permissions by an extreme margin, violating the principle of least privilege. The file comment 'Research-only test fixture. Do not deploy.' does not remove the risk from the IaC artefact: if applied, the role would be immediately assignable at subscription scope.",
+      "evidence": "terraform/tc11_iam.tf: resource 'azurerm_role_definition' 'tc11_reporting_role' — permissions { actions = [\"*\"], not_actions = [] }, assignable_scopes = [data.azurerm_subscription.tc11_current.id]. terraform/tc11_requirements.tf: locals { tc11_required_actions = [\"Microsoft.Resources/subscriptions/resourceGroups/read\", \"Microsoft.Resources/subscriptions/resources/read\"] }.",
+      "impact": "If this role definition is applied and assigned to any principal, that principal gains full control-plane access to all resources in the subscription, including the ability to create, modify, or delete resources, assign other roles (subject to PIM/RBAC constraints), read secrets from Key Vaults, and exfiltrate data. The blast radius is the entire subscription.",
+      "recommendation": "Replace 'actions = [\"*\"]' with the two specific read actions documented in tc11_requirements.tf: 'Microsoft.Resources/subscriptions/resourceGroups/read' and 'Microsoft.Resources/subscriptions/resources/read'. Remove or restrict 'assignable_scopes' to the narrowest applicable scope (e.g., a specific resource group rather than the full subscription) if subscription-wide assignment is not required for the reporting task."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "The companion file tc11_requirements.tf explicitly documents the intended minimum permissions, providing clear ground truth that makes the over-privilege immediately auditable and verifiable.",
+    "The role definition file includes a comment flagging it as a research-only test fixture with 'Do not deploy', indicating awareness of the intentional nature of the misconfiguration for test-case purposes.",
+    "All other context files (network.tf, nsg.tf) continue to demonstrate strong controls: deny-all NSG baseline, private-only Log Analytics workspace, Private Link scope with private endpoints, disabled local authentication, and disabled internet ingestion/query on the workspace.",
+    "TAG-001 compliance is maintained across taggable resources in the repository; the role definition resource (azurerm_role_definition) does not support tags and is therefore not applicable.",
+    "The existing infrastructure correctly avoids DDoS Standard (NET-003 explicitly exempts research workloads), and the research context is consistently established via common_tags."
+  ],
+  "final_recommendation": "The single confirmed finding (F-001) is the wildcard custom role definition. Before this change is merged, the 'actions' list in azurerm_role_definition.tc11_reporting_role must be narrowed to exactly the two read actions specified in tc11_requirements.tf, and the assignable scope should be restricted to the minimum necessary scope. If this file is intentionally a negative test fixture (i.e., it is meant to demonstrate an over-privileged role for detection research), the CI/CD pipeline should enforce that this file is never applied to a real subscription — for example, via a workspace-level variable or a Terraform Cloud policy that blocks wildcard role definitions — and that safeguard should be documented in the repository."
+}
+```

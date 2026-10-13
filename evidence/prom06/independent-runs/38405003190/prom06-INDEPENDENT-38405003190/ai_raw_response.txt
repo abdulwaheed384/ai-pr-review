@@ -1,0 +1,17 @@
+```json
+{
+  "summary": "The changed file (terraform/network.tf) introduces a VNet, subnet, and NSG association for a research workload (PROM06-TC01). The configuration is well-structured: the subnet is associated with an NSG (NET-001 satisfied), no public DNS servers are used (NET-002 satisfied), DDoS Protection Standard is correctly omitted for research (NET-003 not applicable), default outbound access is explicitly disabled, all taggable resources carry the required tags (TAG-001 satisfied), and diagnostic logging is configured in the companion nsg.tf (LOG-001 satisfied). No confirmed security vulnerabilities or policy violations were identified in the changed or context files.",
+  "findings": [],
+  "policy_violations": [],
+  "positives": [
+    "NET-001 (Subnet NSG Association): azurerm_subnet_network_security_group_association.subnet correctly associates the subnet with azurerm_network_security_group.nsg, satisfying the mandatory NSG requirement.",
+    "NET-002 (DNS): azurerm_virtual_network.vnet sets dns_servers = [], which delegates resolution to Azure-provided DNS — no public DNS servers are configured.",
+    "NET-003 (DDoS Protection): The inline comment correctly documents that NET-003 applies only to production workloads. The environment tag is 'research' and no production context is established, so the absence of DDoS Protection Standard is appropriate and not a finding.",
+    "SEC-001 (No Public Exposure): The subnet has default_outbound_access_enabled = false, the NSG enforces explicit deny-all inbound and outbound rules at priority 4096 (evaluated before Azure's default allow rules at 65000/65001), the Log Analytics workspace disables internet_ingestion_enabled and internet_query_enabled, and the AMPLS is configured with PrivateOnly ingestion and query access modes. No public surface is present.",
+    "TAG-001 (Mandatory Tags): All taggable resources (azurerm_resource_group.rg, azurerm_virtual_network.vnet, azurerm_network_security_group.nsg, azurerm_log_analytics_workspace.network, azurerm_monitor_private_link_scope.network, azurerm_private_endpoint.monitor, and all private DNS zones/links) include the required environment, owner, and cost-center tags via local.common_tags. The research_case identifier is also present. The subnet correctly documents that Azure subnets do not support tags.",
+    "LOG-001 (Diagnostic Logging): azurerm_monitor_diagnostic_setting.nsg enables both NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter log categories and forwards them to azurerm_log_analytics_workspace.network. The workspace is private-only, consistent with the documented TC01 requirement for log collection without mandatory query-path access.",
+    "Defense-in-depth posture: The explicit DenyAllOutbound rule at priority 4096 in nsg.tf is an intentional restrictive control that operates before Azure's default outbound allow rules (65000/65001), providing a documented layered network posture appropriate for this research workload."
+  ],
+  "final_recommendation": "No actionable findings were identified. The network.tf change and its companion configuration files demonstrate a secure, policy-compliant baseline for the PROM06-TC01 research workload. The subnet NSG association, deny-all NSG posture, disabled default outbound access, private-only Log Analytics configuration, and full tagging all align with the supplied policy requirements. No changes are required for this PR."
+}
+```

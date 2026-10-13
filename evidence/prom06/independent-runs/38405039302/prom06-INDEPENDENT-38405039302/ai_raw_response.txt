@@ -1,0 +1,48 @@
+```json
+{
+  "summary": "The changed file (terraform/network.tf) introduces a VNet, subnet, and resource group for a tagged research workload (PROM06-TC01). The NSG, diagnostics, private endpoint, and AMPLS configuration are supplied in context files. One confirmed policy gap is identified: the NSG defined in nsg.tf is not explicitly associated with the subnet defined in network.tf, which is required by NET-001. The VNet DNS configuration uses an empty list referencing a custom resolver, which warrants a note. No public exposure, tagging gaps, or logging deficiencies are demonstrated in the supplied code.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy NET-001 requires all subnets to have an NSG associated. The subnet 'subnet-demo' is defined in network.tf without an NSG association, and no azurerm_subnet_network_security_group_association resource is present in any of the supplied Terraform files. The NSG 'nsg-demo-ai' exists in nsg.tf but is not linked to this subnet.",
+      "severity": "HIGH",
+      "title": "Subnet 'subnet-demo' has no NSG association (NET-001 violation)",
+      "description": "The subnet resource 'azurerm_subnet.subnet' (named 'subnet-demo', prefix 10.0.1.0/24) is defined in the changed file terraform/network.tf without any reference to the NSG 'azurerm_network_security_group.nsg' defined in terraform/nsg.tf. No 'azurerm_subnet_network_security_group_association' resource is present in any supplied file. Azure does not automatically associate an NSG with a subnet; an explicit association resource is required. Without it, the subnet operates under Azure's default permissive outbound and default deny inbound rules only, not the explicit deny-all posture defined in the NSG.",
+      "evidence": "terraform/network.tf: resource 'azurerm_subnet' 'subnet' — no network_security_group_id attribute and no azurerm_subnet_network_security_group_association resource referencing this subnet found in any supplied file. terraform/nsg.tf: resource 'azurerm_network_security_group' 'nsg' defines DenyAllInbound and DenyAllOutbound rules but is not attached to the subnet.",
+      "impact": "The subnet is not protected by the intended NSG deny-all posture. Traffic to and from resources placed in this subnet would be governed only by Azure's built-in defaults (default deny inbound, default allow VNet-to-VNet and outbound-to-internet) rather than the explicit deny-all rules in 'nsg-demo-ai'. This violates NET-001 and negates the security intent of the NSG configuration.",
+      "recommendation": "Add an 'azurerm_subnet_network_security_group_association' resource linking 'azurerm_subnet.subnet.id' to 'azurerm_network_security_group.nsg.id'. For example:\n\nresource \"azurerm_subnet_network_security_group_association\" \"subnet_nsg\" {\n  subnet_id                 = azurerm_subnet.subnet.id\n  network_security_group_id = azurerm_network_security_group.nsg.id\n}"
+    },
+    {
+      "id": "F-002",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "The VNet sets dns_servers = [] with a comment stating 'Custom resolver; it must be reachable from this VNet.' An empty list in azurerm_virtual_network causes Azure to use Azure-provided DNS, not a custom resolver. If the intent is a custom resolver, the configuration does not match the comment. Policy NET-002 requires non-public DNS; Azure-provided DNS satisfies that, but if a specific custom resolver is required for private zone resolution or internal services, the effective resolver may not be the intended one.",
+      "severity": "LOW",
+      "title": "VNet dns_servers is empty but comment references a custom resolver",
+      "description": "In terraform/network.tf, 'azurerm_virtual_network.vnet' sets 'dns_servers = []'. In the AzureRM provider, an empty list means Azure-provided DNS is used, not a custom resolver. The inline comment 'Custom resolver; it must be reachable from this VNet' suggests a custom DNS server is intended but has not been specified. If Azure-provided DNS is actually intended, the comment is misleading. If a custom resolver is required (e.g., to resolve private DNS zones not linked via VNet link, or internal hostnames), the configuration is incomplete.",
+      "evidence": "terraform/network.tf: resource 'azurerm_virtual_network' 'vnet' — dns_servers = [] with comment '# Custom resolver; it must be reachable from this VNet.'",
+      "impact": "If a custom DNS resolver is required for private zone resolution or internal name resolution within this research workload, the current empty list will silently fall back to Azure-provided DNS. Private DNS zones are linked to the VNet via azurerm_private_dns_zone_virtual_network_link resources (nsg.tf), so Azure DNS may be sufficient for AMPLS resolution; however, any other internal hostnames expected to resolve via a custom forwarder would fail. The exact impact depends on whether a custom resolver is operationally required.",
+      "recommendation": "Clarify whether a custom DNS resolver is required. If Azure-provided DNS is sufficient (private zones are VNet-linked as shown in nsg.tf), update the comment to reflect this. If a custom resolver is required, supply its IP address(es) in the dns_servers list and verify it is reachable from the VNet."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "NET-001",
+      "policy_name": "All subnets must have a Network Security Group (NSG) associated.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "The subnet sets default_outbound_access_enabled = false, explicitly disabling Azure's default outbound internet access — a strong network control consistent with the deny-all NSG intent.",
+    "All taggable resources (resource group, VNet, NSG, Log Analytics workspace, AMPLS, private endpoint, private DNS zones, VNet links) carry the required environment, owner, and cost-center tags from local.common_tags, satisfying TAG-001.",
+    "The Log Analytics workspace disables local authentication (local_authentication_enabled = false), internet ingestion (internet_ingestion_enabled = false), and internet query (internet_query_enabled = false), and is accessed exclusively via a Private Link Scope with PrivateOnly ingestion and query modes — a strong data-plane isolation posture.",
+    "NSG diagnostic settings in nsg.tf enable both 'NetworkSecurityGroupEvent' and 'NetworkSecurityGroupRuleCounter' categories and forward to the Log Analytics workspace, satisfying LOG-001 for the NSG resource.",
+    "The comment in network.tf explicitly acknowledges NET-003 (DDoS Protection Standard) and documents the research-workload exemption, which matches the policy's stated non-production carve-out.",
+    "The NSG defines explicit DenyAllInbound and DenyAllOutbound rules at priority 4096 — evaluated before Azure's default allow rules (65000/65001) — providing an intentional defense-in-depth deny-all baseline."
+  ],
+  "final_recommendation": "The primary actionable issue is the missing NSG-to-subnet association (F-001), which is a confirmed NET-001 policy violation and negates the security intent of the deny-all NSG. Add an azurerm_subnet_network_security_group_association resource before this configuration is applied. Additionally, clarify the dns_servers comment (F-002) to avoid operational confusion about the effective DNS resolver. All other reviewed controls — tagging, logging, private endpoint, outbound access restriction, and NSG rules — are well-configured for this research workload."
+}
+```

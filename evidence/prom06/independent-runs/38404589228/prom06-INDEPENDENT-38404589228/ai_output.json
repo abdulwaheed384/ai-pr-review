@@ -1,0 +1,46 @@
+{
+  "summary": "The changed file terraform/nsg.tf introduces an NSG with an intentionally unrestricted RDP rule (AllowRDP, priority 301, source 0.0.0.0/0) documented under TC03 for controlled security testing. This is the only confirmed security finding: public RDP exposure is a concrete weakness regardless of the testing justification label. The deny-all inbound and outbound rules at priority 4096 are effective defense-in-depth controls and are not redundant. The Log Analytics workspace, AMPLS private link scope, private endpoint, DNS zones, and diagnostic settings are correctly configured for a research workload. TAG-001 and LOG-001 are satisfied by the supplied configuration. NET-001 is satisfied by the subnet-NSG association in network.tf.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The AllowRDP rule explicitly permits TCP/3389 from any source (0.0.0.0/0) on the public internet to any destination in the subnet. This is a concrete, demonstrated inbound exposure that is independent of whether the workload is research or production. The inline code comment acknowledges the rule is 'deliberately unrestricted' and 'insecure', confirming it is not a misconfiguration but an intentional rule whose security effect is a public attack surface on RDP.",
+      "severity": "HIGH",
+      "title": "RDP (TCP/3389) publicly accessible from any source address",
+      "description": "The security_rule 'AllowRDP' in azurerm_network_security_group.nsg permits inbound TCP traffic on port 3389 from source_address_prefix '0.0.0.0/0' at priority 301. This rule evaluates before the DenyAllInbound rule at priority 4096, so any host on the internet can attempt RDP connections to resources in the associated subnet. RDP is a high-value brute-force and exploit target (e.g., BlueKeep, credential stuffing). The code comment states the rule is 'deliberately unrestricted' and 'insecure', which confirms the exposure but does not eliminate the risk to the subnet or any resources attached to it.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowRDP': priority=301, direction=Inbound, access=Allow, protocol=Tcp, destination_port_range=3389, source_address_prefix=0.0.0.0/0. Associated to subnet via azurerm_subnet_network_security_group_association.subnet in network.tf.",
+      "impact": "Any internet host can initiate TCP connections to port 3389 on resources in subnet-demo (10.0.1.0/24). This enables brute-force credential attacks, exploitation of RDP vulnerabilities, and lateral movement if any VM is deployed into the subnet. The risk materialises as soon as a VM with a private IP in this subnet is provisioned; the NSG rule pre-positions the exposure.",
+      "recommendation": "Restrict source_address_prefix to a known, controlled IP range (e.g., a corporate egress NAT IP or Azure Bastion subnet CIDR) rather than 0.0.0.0/0. If public RDP is required for a specific test scenario, document the exact test window, scope the rule to a single source IP, and remove or revert the rule immediately after the test. Consider using Azure Bastion as a managed RDP proxy to avoid exposing RDP directly."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "NET-001 satisfied: azurerm_subnet_network_security_group_association.subnet associates the NSG with subnet-demo, ensuring all subnet traffic is governed by NSG rules.",
+    "Defense-in-depth: DenyAllInbound (priority 4096) and DenyAllOutbound (priority 4096) provide explicit deny baselines. The outbound deny in particular reinforces the subnet's default_outbound_access_enabled=false setting in network.tf, creating layered outbound control.",
+    "LOG-001 satisfied: azurerm_monitor_diagnostic_setting.nsg enables both supported NSG diagnostic categories (NetworkSecurityGroupEvent, NetworkSecurityGroupRuleCounter) and forwards them to the Log Analytics workspace.",
+    "TAG-001 satisfied: azurerm_network_security_group.nsg and azurerm_log_analytics_workspace.network both carry all mandatory tags (environment, owner, cost-center) via local.common_tags, which also includes research_case.",
+    "Private-only Log Analytics access: internet_ingestion_enabled=false and internet_query_enabled=false on the workspace, combined with the AMPLS private link scope (PrivateOnly ingestion and query), private endpoint, and all required Azure Monitor DNS zones, correctly implement a private-only monitoring path.",
+    "local_authentication_enabled=false on the Log Analytics workspace enforces Azure AD-only authentication, eliminating shared-key access.",
+    "The daily_quota_gb=1 limit and 30-day retention are documented as research cost controls. No supplied policy specifies a minimum retention period or minimum ingestion quota for this research workload, so these are acceptable operational tradeoffs rather than policy gaps.",
+    "NET-003 DDoS Protection Standard is correctly omitted: the workload is explicitly tagged environment=research and the policy exempts non-production workloads."
+  ],
+  "final_recommendation": "The single confirmed finding (F-001) is the intentional AllowRDP rule permitting inbound TCP/3389 from 0.0.0.0/0. Even for a controlled security testing scenario, a public-internet-wide RDP allow rule should be scoped to the minimum necessary source IP range and removed after the test concludes. All other controls in this change are well-configured: private-only monitoring, explicit outbound deny, NSG diagnostic logging, and mandatory tagging are all in place. Address the RDP source restriction before deploying any VM into this subnet.",
+  "operational_score": 70,
+  "verdict": "APPROVE_WITH_COMMENTS",
+  "risk_level": "MEDIUM",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

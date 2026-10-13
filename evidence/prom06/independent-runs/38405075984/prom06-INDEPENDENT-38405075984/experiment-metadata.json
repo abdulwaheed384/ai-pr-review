@@ -1,0 +1,13 @@
+{
+  "experiment_condition": "INDEPENDENT",
+  "pull_request_number": "78",
+  "base_ref": "main",
+  "experiment_commit_sha": "277a730e5c3f424bbb71a36c86044e5fd4a43524",
+  "workflow_sha": "277a730e5c3f424bbb71a36c86044e5fd4a43524",
+  "workflow_run_id": "38405075984",
+  "event_name": "workflow_dispatch",
+  "started_at_utc": "2026-10-13T13:27:28.978272+00:00",
+  "classification_policy_version": "2.2",
+  "review_mode": "INDEPENDENT",
+  "scanner_findings_supplied_to_ai": false
+}

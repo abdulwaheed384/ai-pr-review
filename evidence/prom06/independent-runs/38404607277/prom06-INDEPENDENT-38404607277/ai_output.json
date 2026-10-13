@@ -1,0 +1,36 @@
+{
+  "summary": "The changed file terraform/secret.tf introduces a hardcoded secret value inside a Terraform local. Although the file contains a comment asserting it is a dummy/fake credential for research testing only, the value is embedded as a plaintext string in source-controlled IaC code. The remainder of the configuration (network, NSG, logging, tagging, private endpoint) is unchanged and previously reviewed; no new issues arise from those context files.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "A string value labelled 'secret' is hardcoded as a Terraform local in source-controlled code. Even when the value is asserted to be non-functional, the pattern introduces a concrete risk: (1) the assertion cannot be verified by automated tooling or reviewers without out-of-band validation; (2) the pattern normalises embedding secrets in IaC, increasing the likelihood that a real credential is introduced in the same way; (3) the value will appear in Terraform state and any plan/apply output stored by Terraform Cloud, expanding its exposure surface regardless of its actual validity.",
+      "severity": "MEDIUM",
+      "title": "Hardcoded secret value embedded in Terraform local in source-controlled file",
+      "description": "terraform/secret.tf defines a Terraform local named 'tc09_dummy_secret' with the plaintext string value 'PROM06-FAKE-SECRET-NOT-VALID-12345'. The file comment states this is a research test only and not a real credential, and instructs not to deploy the configuration. However, the value is committed to source control as a literal string inside a locals block. Secret-scanning tools cannot distinguish a 'fake' secret from a real one based solely on the comment, and the value will be persisted in Terraform state if the configuration is ever applied. The pattern itself is a security weakness independent of the current validity of the credential.",
+      "evidence": "terraform/secret.tf — locals block: `tc09_dummy_secret = \"PROM06-FAKE-SECRET-NOT-VALID-12345\"`. The resource name and local name both contain the word 'secret', and the comment 'This is NOT a real credential' and 'Do not deploy this configuration' are the only controls preventing accidental use or replication.",
+      "impact": "If the value is or becomes a real credential, or if a developer copies this pattern for a genuine secret, the credential is exposed in version control history, Terraform Cloud plan/apply logs, and Terraform state storage. Rotation or revocation after discovery is operationally costly. Secret-scanning suppression based on comment assertions is not a reliable control.",
+      "recommendation": "Remove the hardcoded value from source control entirely. If a placeholder or test fixture is genuinely needed for the research case, reference a secret via a Terraform variable with sensitive = true and supply the value through an environment variable or a secrets manager (e.g., Azure Key Vault data source), never as a literal string in a locals block. If the file exists solely to document a test scenario, remove the locals block and keep only the comment, or delete the file."
+    }
+  ],
+  "policy_violations": [],
+  "positives": [
+    "All taggable resources in the existing configuration carry the required environment, owner, and cost-center tags (TAG-001 satisfied).",
+    "The subnet has an NSG associated and the NSG includes explicit deny-all inbound and outbound rules at priority 4096, providing a strong default-deny network posture (NET-001 satisfied).",
+    "Log Analytics workspace is configured with local_authentication_enabled = false, internet_ingestion_enabled = false, and internet_query_enabled = false, combined with a Private Link Scope and private endpoint, providing a private-only log ingestion path (SEC-001 and LOG-001 satisfied for the NSG diagnostic setting).",
+    "DDoS Protection Standard is correctly omitted for this research workload per NET-003, which explicitly excludes non-production workloads.",
+    "The file comment in secret.tf includes an explicit 'Do not deploy' instruction, indicating some awareness of the risk; however, a comment is not a sufficient control for preventing secret exposure in source control."
+  ],
+  "final_recommendation": "Remove the hardcoded secret local from terraform/secret.tf before merge. A comment asserting non-validity is not a substitute for keeping secret material out of source control. If this file is part of a deliberate test case for secret-detection tooling (TC09), the finding is expected and the file should be removed or the literal value replaced with a Terraform sensitive variable reference after the test is complete. No other new security issues are introduced by this change.",
+  "operational_score": 85,
+  "verdict": "APPROVE",
+  "risk_level": "LOW",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

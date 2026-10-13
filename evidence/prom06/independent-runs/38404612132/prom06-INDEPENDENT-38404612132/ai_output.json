@@ -1,0 +1,55 @@
+{
+  "summary": "The changed file terraform/tc10_iam.tf introduces a custom Azure role definition with a wildcard actions permission ('*') scoped to the entire subscription, and assignable at the subscription scope. This grants any principal assigned the role the ability to perform every control-plane and data-plane operation across all resources in the subscription. The file is labelled as a research test fixture, but the role definition is a real Azure resource that becomes exploitable the moment it is assigned to any principal. The rest of the repository (network, logging, NSG, tagging) remains well-configured with no additional confirmed weaknesses in the unchanged files.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The Terraform resource directly provisions a subscription-scoped custom role definition whose only permission entry is actions = ['*'] with no not_actions constraints. This is a concrete, demonstrable over-privilege configuration: any principal assigned this role gains unrestricted control over every Azure resource type in the subscription. The risk is real at role-definition creation because the overly broad assignable_scopes and actions are immediately available for assignment, not hypothetical.",
+      "severity": "HIGH",
+      "title": "Custom role definition grants unrestricted wildcard ('*') permissions at subscription scope",
+      "description": "The resource azurerm_role_definition.tc10_excessive_permissions defines a custom RBAC role with actions = [\"*\"] and not_actions = []. It is assignable at data.azurerm_subscription.current.id (the entire subscription). Any principal assigned this role can perform every Azure Resource Manager operation — including creating, deleting, or modifying any resource, reading secrets, modifying IAM assignments, and disabling security controls — across the full subscription. The 'research-only' comment in the file header does not restrict the role's actual Azure permissions or prevent assignment.",
+      "evidence": "azurerm_role_definition.tc10_excessive_permissions: permissions { actions = [\"*\"] not_actions = [] } and assignable_scopes = [data.azurerm_subscription.current.id]. The role is scoped to the subscription, not to a resource group or narrower boundary.",
+      "impact": "If assigned to any principal (user, group, service principal, or managed identity), this role confers full control over the entire subscription: lateral movement to all resources, privilege escalation, data exfiltration, destruction of logging and security infrastructure, and bypass of all other controls deployed in this repository.",
+      "recommendation": "Remove or do not deploy this role definition. If a test fixture for excessive-permission detection is genuinely required, scope the assignable_scopes to a dedicated, isolated resource group (e.g., the existing rg-network-demo-ai), replace actions = [\"*\"] with the minimum set of actions needed for the specific test scenario, and add lifecycle { prevent_destroy = true } with a matching role assignment removal gate. Ensure the role definition is destroyed immediately after testing and is never present in a shared or production subscription."
+    },
+    {
+      "id": "F-002",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy SEC-001 states that no resource should be publicly exposed unless explicitly required and justified. While the role definition itself is not a network-exposed resource, SEC-001's broader intent covers resources that create unacceptable risk exposure. More directly, the role's subscription-wide assignable_scopes without any documented justification or compensating assignment control violates the spirit of least-privilege that SEC-001 enforces. Additionally, TAG-001 requires all taggable Azure resources to include mandatory tags (environment, owner, cost-center); the azurerm_role_definition resource does not include a tags block.",
+      "severity": "LOW",
+      "title": "Custom role definition is missing mandatory tags required by TAG-001",
+      "description": "azurerm_role_definition.tc10_excessive_permissions does not include a tags block with the mandatory environment, owner, and cost-center keys required by policy TAG-001. While azurerm_role_definition supports tags in the AzureRM provider v4, none are configured. This prevents cost attribution and environment classification for this resource.",
+      "evidence": "azurerm_role_definition.tc10_excessive_permissions: no tags argument is present in tc10_iam.tf. local.common_tags is defined in main.tf and applied to all other resources in the repository but is absent from this resource.",
+      "impact": "The role definition cannot be identified by mandatory governance tags, preventing cost-center attribution (PROM06-RESEARCH) and environment classification. Operationally this is low impact but violates the TAG-001 compliance requirement.",
+      "recommendation": "Add tags = local.common_tags to azurerm_role_definition.tc10_excessive_permissions, consistent with all other tagged resources in this repository."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-002",
+      "policy_id": "TAG-001",
+      "policy_name": "Mandatory resource tagging (environment, owner, cost-center)",
+      "severity": "LOW"
+    }
+  ],
+  "positives": [
+    "All other resources in the repository correctly apply local.common_tags, satisfying TAG-001 for network, NSG, Log Analytics, Private Link Scope, private endpoints, and DNS zones.",
+    "The NSG (nsg.tf) implements explicit DenyAllInbound and DenyAllOutbound rules at priority 4096, providing a strong deny-all baseline evaluated before Azure default allow rules. The subnet has default_outbound_access_enabled = false as an additional outbound control.",
+    "The Log Analytics workspace disables local authentication (local_authentication_enabled = false) and restricts both ingestion and query to private network paths only (internet_ingestion_enabled = false, internet_query_enabled = false), with a full Azure Monitor Private Link Scope and private endpoint chain correctly configured.",
+    "NSG diagnostic settings forward both NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter categories to the Log Analytics workspace, satisfying LOG-001 for the NSG resource.",
+    "The research workload context (environment = 'research' in common_tags, README, and inline comments) is consistently documented, correctly exempting the configuration from production-only controls such as NET-003 DDoS Protection Standard."
+  ],
+  "final_recommendation": "F-001 is the primary concern: the subscription-scoped wildcard role definition (azurerm_role_definition.tc10_excessive_permissions) is a high-severity confirmed vulnerability that should be removed or redesigned before any deployment. If the research test case genuinely requires a deployed role definition, restrict both the actions set and the assignable_scopes to the narrowest possible boundary and destroy the resource immediately after the test run. F-002 (missing tags) is a low-severity compliance gap that is straightforward to fix by adding tags = local.common_tags. The remainder of the Terraform configuration is well-structured with no additional confirmed findings.",
+  "operational_score": 65,
+  "verdict": "DO_NOT_MERGE",
+  "risk_level": "HIGH",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

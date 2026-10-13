@@ -1,0 +1,63 @@
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces a well-structured NSG with explicit deny-all inbound and outbound rules, a private-only Log Analytics workspace, AMPLS with Private Link, private endpoints, and private DNS zones. All taggable resources carry the required tags. The subnet NSG association is confirmed in network.tf. No confirmed security vulnerabilities or policy violations are present. One low-confidence observation regarding NSG diagnostic settings is noted as context-dependent, and two informational items are recorded for audit traceability.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "CONTEXT_DEPENDENT",
+      "status": "NEEDS_CONTEXT",
+      "category_rationale": "LOG-001 requires that resources exposing Azure Monitor diagnostic categories have security-relevant logs forwarded to Log Analytics. The azurerm_network_security_group resource (nsg-demo-ai) supports diagnostic categories (NetworkSecurityGroupEvent, NetworkSecurityGroupRuleCounter). No azurerm_monitor_diagnostic_setting targeting this NSG is present in any supplied file. The nsg.tf comment states 'NSG resource logs are the applicable diagnostic categories for this network-only case' and asserts LOG-001 requires collection, but no diagnostic_setting resource is configured. Whether this omission is a current policy gap or intentionally deferred depends on whether a diagnostic setting is defined outside the supplied files or whether TC01 explicitly excludes NSG-level flow logs.",
+      "severity": "MEDIUM",
+      "title": "No diagnostic setting configured for the NSG resource",
+      "description": "The azurerm_network_security_group resource 'nsg-demo-ai' supports Azure Monitor diagnostic categories (NetworkSecurityGroupEvent, NetworkSecurityGroupRuleCounter). Policy LOG-001 requires that resources exposing diagnostic categories have security-relevant logs forwarded to Log Analytics. The Log Analytics workspace 'law-prom06-tc01-uks' is provisioned in the same file, but no azurerm_monitor_diagnostic_setting resource linking the NSG to this workspace is present in any supplied Terraform file. The inline comment in nsg.tf acknowledges that 'NSG resource logs are the applicable diagnostic categories for this network-only case' and that 'TC01 requires diagnostic log collection', which implies an expectation of collection without a corresponding resource to implement it.",
+      "evidence": "azurerm_network_security_group.nsg ('nsg-demo-ai') in terraform/nsg.tf has no associated azurerm_monitor_diagnostic_setting in any supplied file. azurerm_log_analytics_workspace.network ('law-prom06-tc01-uks') is defined in the same file. The comment block above the workspace explicitly states NSG resource logs are the applicable diagnostic categories and that TC01 requires diagnostic log collection.",
+      "impact": "If no diagnostic setting is configured for the NSG elsewhere in the deployment, NSG security event and rule-counter logs will not be forwarded to the Log Analytics workspace, leaving network-layer activity unaudited despite the workspace being provisioned for this purpose.",
+      "recommendation": "Add an azurerm_monitor_diagnostic_setting resource targeting azurerm_network_security_group.nsg.id with log categories NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter forwarded to azurerm_log_analytics_workspace.network.id. If this setting is defined in a file not supplied for review, document its location. Confirm whether TC01 scopes exclude NSG-level diagnostics and update the policy mapping accordingly."
+    },
+    {
+      "id": "F-002",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "The DenyAllOutbound rule at priority 4096 might appear redundant alongside Azure's default outbound deny at priority 65500, but the nsg.tf comment explicitly documents the intent: priority 4096 evaluates before Azure's default outbound allow rules at 65000/65001, making the custom deny effective and intentional. The subnet also sets default_outbound_access_enabled = false in network.tf. This is a documented defense-in-depth control, not a misconfiguration.",
+      "severity": "INFORMATIONAL",
+      "title": "Explicit outbound deny rule is intentional defense-in-depth, not redundant",
+      "description": "The DenyAllOutbound security_rule at priority 4096 blocks all outbound traffic before Azure's default outbound allow rules (65000/65001) are evaluated. Combined with default_outbound_access_enabled = false on the subnet, this is an intentional restrictive posture. The inline comment confirms the design rationale. No weakness exists.",
+      "evidence": "azurerm_network_security_group.nsg security_rule 'DenyAllOutbound': priority=4096, direction=Outbound, access=Deny. Comment: 'Priority 4096 runs before Azure's default allow rules (65000/65001)'. azurerm_subnet.subnet: default_outbound_access_enabled = false in terraform/network.tf.",
+      "impact": "No negative security impact. The control is intentional and effective.",
+      "recommendation": "No action required. The configuration is intentional and correctly documented."
+    },
+    {
+      "id": "F-003",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "The Log Analytics workspace sets internet_query_enabled = false and internet_ingestion_enabled = false, and query access is routed through AMPLS with PrivateOnly mode and a private endpoint. This might appear to block all access, but the configuration explicitly provisions a private endpoint in the VNet with DNS zone links, providing a private network path for connected clients. The nsg.tf comment acknowledges that TC01 provisions no client workload and that operator query access requires a separately connected client. This is an intentional and documented operational design, not a security misconfiguration.",
+      "severity": "INFORMATIONAL",
+      "title": "Private-only Log Analytics access is intentional; no client workload in TC01 scope",
+      "description": "azurerm_log_analytics_workspace.network disables internet ingestion and query. azurerm_monitor_private_link_scope.network sets both ingestion_access_mode and query_access_mode to PrivateOnly. A private endpoint (pe-ampls-prom06-tc01-uks) with five private DNS zone links is configured for the AMPLS resource in the subnet. The inline comment states TC01 provisions no client workload and that query access requires a separately connected operator/client. This is a deliberate design tradeoff documented in the repository.",
+      "evidence": "azurerm_log_analytics_workspace.network: internet_ingestion_enabled=false, internet_query_enabled=false. azurerm_monitor_private_link_scope.network: ingestion_access_mode=PrivateOnly, query_access_mode=PrivateOnly. azurerm_private_endpoint.monitor targets the AMPLS scope with five DNS zones linked to azurerm_virtual_network.vnet. Comment: 'TC01 provisions no client workload; query access requires a separately connected operator/client.'",
+      "impact": "No security weakness. The private-only posture is more restrictive than a public endpoint. Operational query access depends on a separately connected client or VPN, which is acknowledged.",
+      "recommendation": "No action required. Document the operator access path (VPN, ExpressRoute, or bastion) in deployment runbooks if not already covered."
+    }
+  ],
+  "policy_violations": [],
+  "positives": [
+    "TAG-001 compliance: All taggable resources in nsg.tf (azurerm_network_security_group, azurerm_log_analytics_workspace, azurerm_monitor_private_link_scope, azurerm_private_endpoint, five azurerm_private_dns_zone resources, and azurerm_private_dns_zone_virtual_network_link) carry all four required tags (environment, owner, cost-center, research_case) via local.common_tags.",
+    "NET-001 compliance: The subnet 'subnet-demo' is associated with the NSG 'nsg-demo-ai' via azurerm_subnet_network_security_group_association.subnet in network.tf.",
+    "SEC-001 compliance: No public IP, public load balancer, or internet-accessible endpoint is provisioned. The Log Analytics workspace disables internet ingestion and query. AMPLS is configured PrivateOnly for both ingestion and query modes.",
+    "NET-002 compliance: azurerm_virtual_network.vnet sets dns_servers = [], which uses Azure-provided DNS (not public DNS servers). The comment notes a custom resolver must be reachable, consistent with internal DNS use.",
+    "NET-003 not applicable: The workload is explicitly tagged environment=research and the network.tf comment references NET-003 as not applying to TC01. No finding is raised for missing DDoS Protection Standard.",
+    "Defense-in-depth NSG posture: Explicit DenyAllInbound and DenyAllOutbound rules at priority 4096 combined with default_outbound_access_enabled=false on the subnet provide a strong deny-by-default network baseline.",
+    "local_authentication_enabled=false on the Log Analytics workspace enforces Entra ID (AAD) authentication, preventing local key-based access.",
+    "The daily_quota_gb=1 and retention_in_days=30 settings on the Log Analytics workspace are noted as a documented research cost cap. No supplied policy specifies a minimum retention period or minimum quota for this research workload, so these values are not treated as findings. The operational tradeoff (limited retention and ingestion volume) should be revisited if the workload transitions to production."
+  ],
+  "final_recommendation": "The NSG change introduces a strong deny-all network posture with appropriate tagging, private-only monitoring infrastructure, and documented design intent. The one context-dependent concern (F-001) is whether an NSG diagnostic setting is configured outside the supplied files: the inline comment asserts LOG-001 applies and that collection is required, but no azurerm_monitor_diagnostic_setting resource is present. Add an explicit diagnostic setting for the NSG or confirm and document that it is defined elsewhere. No confirmed vulnerabilities or policy violations are present in the supplied configuration.",
+  "operational_score": 100,
+  "verdict": "APPROVE",
+  "risk_level": "LOW",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

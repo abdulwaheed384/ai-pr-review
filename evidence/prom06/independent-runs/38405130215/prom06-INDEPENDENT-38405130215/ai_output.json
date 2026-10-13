@@ -1,0 +1,58 @@
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces an NSG with a deliberately unrestricted inbound RDP rule (port 3389 open to 0.0.0.0/0), annotated as intentional for controlled security testing (TC03). The remainder of the configuration implements a well-structured private-only Log Analytics workspace with AMPLS, private endpoints, DNS zones, and NSG diagnostic settings. The workload is explicitly scoped as research (PROM06-TC01). One confirmed HIGH-severity vulnerability is present: the public RDP exposure, which is a concrete security weakness regardless of the stated testing intent. All other controls are properly configured.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The NSG security rule 'AllowRDP' permits unrestricted inbound TCP traffic on port 3389 from any source (0.0.0.0/0) at priority 301, which evaluates before the DenyAllInbound rule at priority 4096. This is a concrete, currently deployed security weakness: any host on the internet can attempt RDP connections to resources in the associated subnet. The comment acknowledges this is deliberate for testing (TC03), but the code as written exposes RDP publicly, which is a demonstrated vulnerability in the supplied configuration.",
+      "severity": "HIGH",
+      "title": "Unrestricted inbound RDP access from any source (0.0.0.0/0) on port 3389",
+      "description": "The NSG 'nsg-demo-ai' contains a security rule named 'AllowRDP' at priority 301 that allows inbound TCP traffic on destination port 3389 from source_address_prefix '0.0.0.0/0' to any destination. Because this rule is evaluated at priority 301, it takes precedence over the explicit DenyAllInbound rule at priority 4096. Any internet host can reach RDP on resources in the associated subnet (subnet-demo, 10.0.1.0/24). The inline comment cites TC03 and describes this as a controlled security testing rule, but no compensating access control (such as a JIT policy, source IP restriction, or bastion host) is configured in the supplied files.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowRDP': priority=301, direction=Inbound, access=Allow, protocol=Tcp, source_address_prefix='0.0.0.0/0', destination_port_range='3389'. Associated with azurerm_subnet.subnet via azurerm_subnet_network_security_group_association.subnet.",
+      "impact": "Any internet-reachable host on the subnet is exposed to brute-force, credential-stuffing, and exploitation attempts against RDP. Even in a research context this creates attack surface that could result in unauthorised access, lateral movement, or data exfiltration if any workload is deployed into the subnet.",
+      "recommendation": "Restrict source_address_prefix to a known operator or management IP range rather than '0.0.0.0/0'. If RDP access is genuinely required for testing, scope it to specific source CIDRs or use Azure Bastion with a dedicated subnet. If public RDP is a deliberate test condition, document the time-bounded nature and ensure no persistent workloads are deployed into the subnet while the rule is active."
+    },
+    {
+      "id": "F-002",
+      "category": "POLICY_OR_COMPLIANCE",
+      "status": "CONFIRMED",
+      "category_rationale": "Policy SEC-001 states that no resource should be publicly exposed unless explicitly required and justified. The AllowRDP rule exposes RDP to 0.0.0.0/0. The comment references TC03 as the justification, but TC03 is not a supplied policy document and is not part of the reviewed policy set; policy.md SEC-001 does not recognise a test-case identifier as sufficient justification within the policy framework. This is a policy mapping to F-001, not an independent finding.",
+      "severity": "HIGH",
+      "title": "SEC-001 violation: public RDP exposure without documented policy justification",
+      "description": "SEC-001 requires that no resource be publicly exposed unless explicitly required and justified within the policy framework. The 'AllowRDP' rule at priority 301 exposes port 3389 to 0.0.0.0/0. The inline code comment ('TC03: Deliberately unrestricted RDP access for controlled security testing') references a test-case identifier not defined in the supplied policy documentation. This does not constitute a policy-recognised justification under SEC-001.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowRDP': source_address_prefix='0.0.0.0/0', destination_port_range='3389'. Policy SEC-001: 'No resource should be publicly exposed unless explicitly required and justified.'",
+      "impact": "Same as F-001: internet-wide RDP exposure on the associated subnet.",
+      "recommendation": "Supply a formal policy exception or change request referencing SEC-001 if public RDP is a documented test requirement, or restrict the source range as described in F-001."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No public exposure without explicit justification",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "NET-001 satisfied: azurerm_subnet_network_security_group_association.subnet associates nsg-demo-ai with subnet-demo.",
+    "NET-002 satisfied: azurerm_virtual_network.vnet has dns_servers=[] (Azure DNS default) with a comment noting custom resolver intent; no public DNS servers are configured.",
+    "NET-003 correctly deferred: network.tf comment explicitly notes the research scope of TC01 exempts it from DDoS Protection Standard, consistent with policy NET-003.",
+    "TAG-001 satisfied: all taggable resources (resource group, VNet, NSG, Log Analytics workspace, AMPLS, private endpoint, DNS zones, DNS VNet links) carry the mandatory environment, owner, and cost-center tags via local.common_tags, which also preserves the research_case identifier.",
+    "LOG-001 satisfied: azurerm_monitor_diagnostic_setting.nsg enables both supported NSG diagnostic categories (NetworkSecurityGroupEvent, NetworkSecurityGroupRuleCounter) and forwards them to the Log Analytics workspace. The comment correctly documents that subnet-level and VM diagnostics are not applicable for this network-only configuration.",
+    "Outbound internet is blocked by default (azurerm_subnet.subnet has default_outbound_access_enabled=false) and reinforced by the explicit DenyAllOutbound rule at priority 4096, providing defence-in-depth for egress.",
+    "Log Analytics workspace is hardened: local_authentication_enabled=false, internet_ingestion_enabled=false, internet_query_enabled=false. Ingestion and query are private-only via AMPLS with a correctly configured private endpoint and five required private DNS zones linked to the VNet.",
+    "Private DNS zone VNet links use a for_each pattern to consistently link all five Azure Monitor private DNS zones to the VNet, enabling correct DNS resolution for private endpoint connectivity."
+  ],
+  "final_recommendation": "The configuration is well-structured and demonstrates strong controls for a research workload: private-only Log Analytics, AMPLS, hardened workspace settings, outbound denial, and complete tagging. The single actionable issue is the intentionally unrestricted inbound RDP rule (F-001/F-002). Before deploying any compute workload into this subnet, restrict the AllowRDP source range to a known operator CIDR or replace the rule with an Azure Bastion solution. If public RDP is a formal test requirement, obtain and record a SEC-001 policy exception referencing the test-case scope and a defined expiry.",
+  "operational_score": 40,
+  "verdict": "DO_NOT_MERGE",
+  "risk_level": "CRITICAL",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

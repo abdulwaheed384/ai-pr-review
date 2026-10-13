@@ -1,0 +1,64 @@
+{
+  "summary": "The changed file (terraform/network.tf) introduces a VNet, subnet, and NSG association for a research workload (PROM06-TC01). The subnet correctly disables default outbound access and is associated with the NSG defined in nsg.tf. The NSG carries explicit deny-all inbound and outbound rules. Diagnostic logging, private-only Log Analytics, AMPLS, and all required tags are configured in context files. No confirmed security vulnerabilities or policy violations are present in the changed file. One informational observation is noted regarding the Private DNS Zone VNet link configuration.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "The NSG has explicit DenyAllInbound and DenyAllOutbound rules at priority 4096, which are evaluated before Azure's default allow rules (65000/65001) and default deny (65500). The subnet is associated with this NSG via azurerm_subnet_network_security_group_association. The combination of default_outbound_access_enabled = false on the subnet and the NSG deny-all rules provides a layered restrictive posture. A scan might flag the deny-all outbound as redundant, but per the review instructions this is an intentional defense-in-depth control and not a weakness. No public exposure or permissive rule is present.",
+      "severity": "INFORMATIONAL",
+      "title": "NSG deny-all outbound rule may be flagged as redundant by scanners",
+      "description": "The NSG in nsg.tf includes a DenyAllOutbound rule at priority 4096. This runs before Azure's default outbound allow rules at priorities 65000 and 65001. In conjunction with default_outbound_access_enabled = false on the subnet, this is an intentional layered control. Scanners may incorrectly classify this as redundant because Azure has a default deny at 65500, but the custom rule at 4096 takes effect before the default allow rules and is an effective, documented defense-in-depth measure.",
+      "evidence": "azurerm_network_security_group.nsg: security_rule DenyAllOutbound, priority=4096, direction=Outbound, access=Deny. azurerm_subnet.subnet: default_outbound_access_enabled=false.",
+      "impact": "No security impact. The outbound deny rule is effective and intentional.",
+      "recommendation": "No action required. Retain the explicit deny-all outbound rule as a positive defense-in-depth control. Scanner findings flagging this as redundant should be suppressed with documented rationale."
+    },
+    {
+      "id": "F-002",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "Policy NET-003 requires DDoS Protection Standard for production Virtual Networks only. The Terraform comment in network.tf explicitly notes this exemption ('NET-003 requires DDoS Protection Standard for production; TC01 is research'), and main.tf sets environment=research in common_tags. Per the policy documentation, this control does not apply to research workloads. Reporting the absence of DDoS Protection Standard as a finding would be incorrect.",
+      "severity": "INFORMATIONAL",
+      "title": "DDoS Protection Standard not enabled — inapplicable to research workload",
+      "description": "azurerm_virtual_network.vnet does not configure a ddos_protection_plan block. Policy NET-003 mandates DDoS Protection Standard for production VNets only. The workload is explicitly tagged environment=research and the Terraform code contains a comment referencing this exemption. The absence of DDoS Protection Standard is compliant for this workload.",
+      "evidence": "azurerm_virtual_network.vnet: no ddos_protection_plan block. main.tf locals: environment='research'. network.tf comment: '# NET-003 requires DDoS Protection Standard for production; TC01 is research.'",
+      "impact": "No impact for this research workload. Would require remediation only if workload classification changes to production.",
+      "recommendation": "No action required under current research classification. If the workload is promoted to production, add a ddos_protection_plan block referencing a DDoS Protection Standard plan."
+    },
+    {
+      "id": "F-003",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "Policy NET-001 requires all subnets to have an NSG associated. azurerm_subnet_network_security_group_association.subnet explicitly associates azurerm_subnet.subnet with azurerm_network_security_group.nsg. The requirement is fully met. No finding is warranted.",
+      "severity": "INFORMATIONAL",
+      "title": "Subnet NSG association is correctly configured",
+      "description": "azurerm_subnet_network_security_group_association.subnet associates the subnet with the NSG. Policy NET-001 is satisfied. This observation is retained for audit traceability only.",
+      "evidence": "azurerm_subnet_network_security_group_association.subnet: subnet_id=azurerm_subnet.subnet.id, network_security_group_id=azurerm_network_security_group.nsg.id.",
+      "impact": "No impact. Control is in place.",
+      "recommendation": "No action required."
+    }
+  ],
+  "policy_violations": [],
+  "positives": [
+    "NET-001 satisfied: azurerm_subnet_network_security_group_association.subnet correctly associates the subnet with the NSG.",
+    "NET-002 satisfied: azurerm_virtual_network.vnet sets dns_servers=[] which resolves to Azure-provided DNS; no public DNS servers are configured.",
+    "NET-003 exemption correctly applied: DDoS Protection Standard is not required for this research workload; the code comment and environment=research tag document the rationale.",
+    "SEC-001 satisfied: No public IP, no public-facing service, default_outbound_access_enabled=false on the subnet, and NSG deny-all rules at priority 4096 for both inbound and outbound directions provide a strongly restrictive network posture.",
+    "TAG-001 satisfied: azurerm_resource_group.rg, azurerm_virtual_network.vnet, and azurerm_network_security_group.nsg all inherit local.common_tags with environment, owner, cost-center, and research_case. The code correctly notes that subnets do not support tags.",
+    "LOG-001 satisfied: azurerm_monitor_diagnostic_setting.nsg in nsg.tf enables both NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter categories and forwards them to the Log Analytics workspace.",
+    "Private-only Log Analytics ingestion and query access enforced via AMPLS (ingestion_access_mode=PrivateOnly, query_access_mode=PrivateOnly) with a private endpoint and five Private DNS zones linked to the VNet, eliminating public Log Analytics exposure.",
+    "Local authentication disabled on the Log Analytics workspace (local_authentication_enabled=false) enforces Entra ID-only access.",
+    "Internet ingestion and internet query both disabled on the Log Analytics workspace (internet_ingestion_enabled=false, internet_query_enabled=false), consistent with the private-only AMPLS posture."
+  ],
+  "final_recommendation": "The changed file terraform/network.tf introduces a well-configured research network baseline. All applicable policies (NET-001, NET-002, TAG-001, SEC-001, LOG-001) are satisfied across the changed and context files. No confirmed security vulnerabilities or policy violations are present. The three findings above are false-positive observations retained for audit traceability only. No remediation is required for this change.",
+  "operational_score": 100,
+  "verdict": "APPROVE",
+  "risk_level": "LOW",
+  "experiment_condition": "INDEPENDENT",
+  "scoring_config": "ai/scoring.json",
+  "classification_policy_version": "2.2",
+  "scanner_findings_supplied_to_ai": false,
+  "processing_audit": {
+    "deduplicated_findings": []
+  }
+}

@@ -1,0 +1,31 @@
+```json
+{
+  "summary": "The changed file (terraform/network.tf) introduces a VNet, subnet, and NSG association for a research workload (PROM06-TC01). The configuration is well-structured: the subnet is correctly associated with an NSG that enforces explicit deny-all inbound and outbound rules, default outbound access is disabled, Azure-provided DNS is used, and all taggable resources carry the required tags. The complementary diagnostic, private-link, and DNS zone resources in context files are consistent and complete. No confirmed security vulnerabilities or policy violations were identified in the changed file. One low-severity informational note is recorded regarding the private DNS zone virtual network link splitting logic for traceability.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "The `azurerm_private_dns_zone_virtual_network_link` resource uses `split(\"/\", each.value)[8]` to extract the zone name from the resource ID. This pattern is a common Terraform idiom for Azure resource IDs and is correct for the standard Azure resource ID format. No misconfiguration is demonstrated; the zones are linked to the VNet and registration is appropriately disabled. The concern is plausible on first inspection but is contradicted by the supplied code and standard Azure resource ID structure.",
+      "severity": "INFORMATIONAL",
+      "title": "Private DNS zone name extraction via split() index — plausible concern, not a defect",
+      "description": "The for_each loop in `azurerm_private_dns_zone_virtual_network_link.monitor` extracts the zone name using `split(\"/\", each.value)[8]`. Azure resource IDs follow the format `/subscriptions/{sub}/resourceGroups/{rg}/providers/{ns}/{type}/{name}`, placing the resource name at index 8 (0-based). The five DNS zones are all of type `Microsoft.Network/privateDnsZones`, so index 8 correctly resolves to the zone name. No misconfiguration is present.",
+      "evidence": "azurerm_private_dns_zone_virtual_network_link.monitor — `private_dns_zone_name = split(\"/\", each.value)[8]` with each.value set to one of the five azurerm_private_dns_zone resource IDs (monitor, oms, ods, agentsvc, blob) in terraform/nsg.tf.",
+      "impact": "None. The zone links are correctly formed based on the standard Azure resource ID schema.",
+      "recommendation": "No change required. If long-term maintainability is a concern, an alternative is to reference the `.name` attribute directly (e.g., `azurerm_private_dns_zone.monitor.name`) rather than parsing the ID, but this is optional style guidance and not a security matter."
+    }
+  ],
+  "policy_violations": [],
+  "positives": [
+    "NET-001 satisfied: azurerm_subnet_network_security_group_association.subnet explicitly associates the subnet with azurerm_network_security_group.nsg, meeting the requirement that all subnets have an NSG.",
+    "NET-002 satisfied: azurerm_virtual_network.vnet sets dns_servers = [] (Azure-provided DNS), with an inline comment confirming the intent. No public DNS servers are configured.",
+    "NET-003 not applicable: The inline comment on the VNet correctly documents that DDoS Protection Standard is a production-only requirement and that TC01 is a research workload, consistent with the policy.md NET-003 carve-out and the common_tags environment = 'research' value.",
+    "SEC-001 satisfied: default_outbound_access_enabled = false on the subnet removes implicit outbound internet access. The NSG enforces explicit DenyAllInbound and DenyAllOutbound rules at priority 4096, ahead of Azure's default allow rules (65000/65001). No public IPs or public-facing services are provisioned.",
+    "TAG-001 satisfied: azurerm_resource_group.rg, azurerm_virtual_network.vnet, and azurerm_network_security_group.nsg (via context) all carry local.common_tags, which includes environment, owner, cost-center, and research_case. The subnet comment correctly notes that Azure subnets do not support tags.",
+    "LOG-001 satisfied: azurerm_monitor_diagnostic_setting.nsg (in nsg.tf) enables both NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter log categories for the NSG and forwards them to the Log Analytics workspace. The workspace uses private-only ingestion and query access modes with a full AMPLS and private endpoint configuration, preventing public log exfiltration.",
+    "The Log Analytics workspace disables local authentication (local_authentication_enabled = false) and public internet ingestion and query (internet_ingestion_enabled = false, internet_query_enabled = false), enforcing strong access controls consistent with a private research environment.",
+    "The daily_quota_gb = 1 and retention_in_days = 30 settings on the Log Analytics workspace are documented as intentional cost controls for a research deployment, not a diagnostic coverage gap. This tradeoff is appropriate for the stated TC01 research scope."
+  ],
+  "final_recommendation": "The changed network.tf and its supporting context files demonstrate a well-hardened research network baseline. All supplied policy requirements (NET-001, NET-002, LOG-001, TAG-001, SEC-001) are met, and the NET-003 production-only control is correctly excluded with documented rationale. No mandatory remediation is required. The single recorded finding is a FALSE_POSITIVE retained only for audit traceability. If this configuration is ever promoted to a production workload, revisit DDoS Protection Standard (NET-003), the 30-day log retention period, the 1 GB/day ingestion quota, and the absence of a connected operator client for private workspace queries."
+}
+```

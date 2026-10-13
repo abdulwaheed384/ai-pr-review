@@ -1,0 +1,36 @@
+```json
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces an NSG with an explicit inbound allow rule for TCP/80 from any IPv4 address (0.0.0.0/0), documented as intentional for security testing under case TC04. The configuration also provisions a Log Analytics workspace with private-only access, an AMPLS private link scope, a private endpoint, and NSG diagnostic settings. The primary security concern is the deliberately public HTTP exposure, which is a confirmed weakness regardless of the stated test justification. The remaining controls — tagging, logging, private endpoint, deny-all baseline rules — are well-formed and align with policy requirements for this research workload.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "SECURITY_VULNERABILITY",
+      "status": "CONFIRMED",
+      "category_rationale": "The NSG rule 'AllowHTTP' at priority 302 permits inbound TCP/80 from source 0.0.0.0/0 to any destination, exposing any resource attached to this NSG to the public internet on port 80. This is a concrete, currently deployed permissive inbound rule. The inline comment acknowledges it ('Deliberately public HTTP access for security testing only') but the code supplies no time-bound, scope-limited, or compensating control that would contain the exposure. SEC-001 requires explicit justification for public exposure; the comment provides an assertion but not a scoped or bounded control.",
+      "severity": "HIGH",
+      "title": "NSG allows unrestricted inbound HTTP (TCP/80) from any IPv4 address",
+      "description": "The security rule 'AllowHTTP' (priority 302, direction Inbound, access Allow, protocol Tcp, destination_port_range 80, source_address_prefix 0.0.0.0/0) in azurerm_network_security_group.nsg exposes port 80 on every resource associated with this NSG to the entire internet. The inline comment attributes this to test case TC04, but no IP restriction, time-bound mechanism, or additional compensating rule is present in the supplied configuration to limit the blast radius. Even in a research context, unrestricted public inbound access on a live rule represents a concrete, current weakness.",
+      "evidence": "azurerm_network_security_group.nsg, security_rule 'AllowHTTP': priority=302, direction='Inbound', access='Allow', protocol='Tcp', destination_port_range='80', source_address_prefix='0.0.0.0/0', destination_address_prefix='*'.",
+      "impact": "Any host or service attached to this NSG is reachable on TCP/80 from the public internet. This exposes the workload to web-based scanning, exploitation of any HTTP service listening on port 80, and lateral movement if an attacker can reach the subnet. The research classification does not eliminate this risk for the duration the rule is active.",
+      "recommendation": "If public HTTP access is genuinely required for the test, restrict source_address_prefix to the specific tester IP range(s) rather than 0.0.0.0/0. If the rule is temporary, implement it outside of version-controlled Terraform (e.g., a time-boxed manual override) or use a dedicated test NSG that is not associated with the main subnet. Remove or scope the rule immediately after the test concludes. Reference SEC-001: public exposure requires explicit justification and should be as narrowly scoped as possible."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "SEC-001",
+      "policy_name": "No resource should be publicly exposed unless explicitly required and justified.",
+      "severity": "HIGH"
+    }
+  ],
+  "positives": [
+    "TAG-001 compliance: azurerm_network_security_group.nsg and all other taggable resources carry all four mandatory tags (environment, owner, cost-center, research_case) via local.common_tags. The subnet correctly omits tags with a documented rationale, consistent with the policy exemption for resources that do not support tags.",
+    "LOG-001 compliance: azurerm_monitor_diagnostic_setting.nsg enables both supported NSG diagnostic categories ('NetworkSecurityGroupEvent' and 'NetworkSecurityGroupRuleCounter') and forwards them to the Log Analytics workspace. Collection-only mode (no interactive query or alerting requirement) is consistent with the TC01 workload requirement as documented.",
+    "NET-001 compliance: azurerm_subnet_network_security_group_association.subnet correctly associates the NSG with the subnet, satisfying the mandatory NSG-per-subnet requirement.",
+    "Defense-in-depth deny baseline: The explicit DenyAllInbound (priority 4096) and DenyAllOutbound (priority 4096) rules provide a documented defense-in-depth baseline. The outbound deny rule combined with default_outbound_access_enabled=false on the subnet creates a restrictive outbound posture, which is a positive security control.",
+    "Private-only Log Analytics access: internet_ingestion_enabled=false and internet_query_enabled=false on the workspace, combined with the AMPLS private link scope (ingestion_access_mode=PrivateOnly, query_access_mode=PrivateOnly), private endpoint, and five private DNS zone links, ensure log data is accessible only over private network paths. local_authentication_enabled=false enforces Azure AD-only authentication to the workspace.",
+    "NET-003 exemption correctly applied: The network.tf comment documents that DDoS Protection Standard is not required for this research workload, consistent with the policy exclusion stated in NET-003."
+  ],
+  "final_recommendation": "One confirmed HIGH-severity finding requires remediation before or alongside merge: the AllowHTTP NSG rule permits unrestricted inbound TCP/80 from the internet (0.0.0.0/0). Restrict the source to specific test IP ranges, use a separate time-boxed mechanism, or remove the rule if the test is complete. All other controls — tagging, NSG association, diagnostic logging, private-only workspace access, and the deny-all baseline — are correctly implemented and policy-compliant for this research workload."
+}
+```

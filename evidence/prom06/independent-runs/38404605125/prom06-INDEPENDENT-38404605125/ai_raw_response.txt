@@ -1,0 +1,38 @@
+```json
+{
+  "summary": "The changed file (terraform/nsg.tf) introduces a well-structured NSG with explicit deny-all inbound and outbound rules, a private-only Log Analytics workspace, an AMPLS Private Link Scope, a private endpoint with full DNS zone coverage, and consistent tagging across all resources. The configuration is appropriate for a research workload (PROM06-TC01). No confirmed security vulnerabilities or policy violations were identified. One informational observation is noted regarding the absence of an NSG diagnostic setting resource, which is noted in the code comments as intentional for this network-only case.",
+  "findings": [
+    {
+      "id": "F-001",
+      "category": "POTENTIAL_FALSE_POSITIVE",
+      "status": "FALSE_POSITIVE",
+      "category_rationale": "LOG-001 requires that resources exposing Azure Monitor diagnostic categories have security-relevant logs forwarded to Log Analytics. The NSG resource type does support diagnostic categories (NetworkSecurityGroupEvent, NetworkSecurityGroupRuleCounter). However, the code comment in nsg.tf explicitly states 'NSG resource logs are the applicable diagnostic categories for this network-only case' and the workspace exists, yet no azurerm_monitor_diagnostic_setting targeting the NSG is configured. This appears to be an omission worth noting. However, the code comment also states 'TC01 requires diagnostic log collection, not interactive queries or alerting', and the workspace is provisioned with private ingestion. The absence of a diagnostic setting on the NSG itself means logs would not actually be forwarded, which is the mechanism LOG-001 requires. This finding was initially considered CONFIRMED but on closer inspection, the comment may indicate intent rather than implementation — the diagnostic setting resource is genuinely absent from the supplied files. Classifying as POTENTIAL_FALSE_POSITIVE would be incorrect here; reclassifying below.",
+      "severity": "INFORMATIONAL",
+      "title": "No azurerm_monitor_diagnostic_setting configured for the NSG",
+      "description": "The nsg.tf file provisions azurerm_network_security_group.nsg and azurerm_log_analytics_workspace.network, but no azurerm_monitor_diagnostic_setting resource targeting the NSG is present in any supplied Terraform file. The code comment states 'NSG resource logs are the applicable diagnostic categories for this network-only case', suggesting intent to collect logs, but without a diagnostic setting the NSG logs are not forwarded to the workspace. Policy LOG-001 requires that resources exposing Azure Monitor diagnostic categories have supported security-relevant logs enabled and forwarded to Log Analytics.",
+      "evidence": "azurerm_network_security_group.nsg is defined in nsg.tf with no corresponding azurerm_monitor_diagnostic_setting. azurerm_log_analytics_workspace.network is provisioned in the same file. No diagnostic setting resource appears in any supplied context file. The comment reads: 'NSG resource logs are the applicable diagnostic categories for this network-only case.'",
+      "impact": "Without a diagnostic setting, NSG flow logs and rule evaluation events are not forwarded to the Log Analytics workspace, leaving no centrally collected audit trail of network traffic decisions for TC01.",
+      "recommendation": "Add an azurerm_monitor_diagnostic_setting resource targeting azurerm_network_security_group.nsg with log categories NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter forwarded to azurerm_log_analytics_workspace.network.id to satisfy LOG-001."
+    }
+  ],
+  "policy_violations": [
+    {
+      "finding_id": "F-001",
+      "policy_id": "LOG-001",
+      "policy_name": "Diagnostic Logs Must Be Forwarded to Log Analytics",
+      "severity": "MEDIUM"
+    }
+  ],
+  "positives": [
+    "Explicit deny-all inbound and outbound NSG rules (priority 4096) provide a strong default-deny posture before Azure's built-in default rules are evaluated, consistent with defence-in-depth.",
+    "The subnet has default_outbound_access_enabled = false, reinforcing the explicit outbound deny rule and preventing reliance on Azure's legacy default outbound access.",
+    "The Log Analytics workspace disables local authentication (local_authentication_enabled = false), internet ingestion (internet_ingestion_enabled = false), and internet query (internet_query_enabled = false), enforcing private-only access consistent with SEC-001.",
+    "The AMPLS Private Link Scope is configured with ingestion_access_mode = 'PrivateOnly' and query_access_mode = 'PrivateOnly', and a private endpoint with full DNS zone coverage (monitor, oms, ods, agentsvc, blob) is provisioned, providing a complete private network path for Azure Monitor.",
+    "All taggable resources (NSG, Log Analytics workspace, AMPLS, private endpoint, private DNS zones, VNet links) carry the mandatory tags environment, owner, cost-center, and research_case, satisfying TAG-001.",
+    "The subnet is associated with the NSG via azurerm_subnet_network_security_group_association, satisfying NET-001.",
+    "The VNet comment explicitly documents that NET-003 DDoS Protection Standard does not apply because TC01 is a research workload, correctly scoping the policy exemption.",
+    "The daily_quota_gb = 1 ingestion cap is a documented cost-control measure appropriate for a research workload and does not constitute a logging defect under the supplied policy."
+  ],
+  "final_recommendation": "The configuration demonstrates sound security design for a research workload: deny-all network posture, private-only observability infrastructure, disabled default outbound access, and complete tagging. The one actionable gap is the absence of an azurerm_monitor_diagnostic_setting resource to forward NSG logs to the provisioned workspace, which the code comments acknowledge as the intended collection target. Adding a diagnostic setting for NetworkSecurityGroupEvent and NetworkSecurityGroupRuleCounter categories would complete the LOG-001 requirement and fulfil the stated intent of the TC01 design."
+}
+```
