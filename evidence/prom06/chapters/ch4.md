@@ -16,7 +16,9 @@ Both scanners produced identical output in every repeated run, and their results
 
 ### Checkov's misses on public network rules
 
-The most instructive scanner result is Checkov's silence on TC02–TC04. Its rules for public SSH, RDP and HTTP exposure (CKV_AZURE_10, CKV_AZURE_9 and CKV_AZURE_160) were evaluated and passed for rules whose source was `0.0.0.0/0`. When the source in TC02 was changed to `*` and nothing else, CKV_AZURE_10 failed. The miss is therefore a value-matching limitation in the rule, not a configuration error, and it means that two equivalent ways of writing "the whole internet" receive different verdicts.
+The most instructive scanner result is Checkov's silence on TC02–TC04. Its rules for public SSH, RDP and HTTP exposure (CKV_AZURE_10, CKV_AZURE_9 and CKV_AZURE_160) were evaluated and passed for rules whose source was `0.0.0.0/0`. When the source in TC02 was changed to `*` and nothing else, CKV_AZURE_10 failed. The miss is therefore a value-matching limitation in the rule, not a configuration error, and it means that two equivalent ways of writing "the whole internet" receive different verdicts. Figure 4.2 shows the TC02 pull request as a developer saw it.
+
+![Figure 4.2: TC02 pull request (#71): Checkov reports no failed checks, while tfsec and the AI reviewer both report the public SSH rule](../figures/fig_ss_tc02_pr71.png)
 
 ### tfsec's silence outside network exposure
 
@@ -74,10 +76,12 @@ None of the three AI-only detections depended on the policy file supplied to the
 On the non-vulnerable cases the AI was less reliable:
 
 - **TC01:** clean in all three runs.
-- **TC12:** one run blocked the legitimate HTTPS change (score 50, DO_NOT_MERGE), one raised a LOW tagging finding, and one was clean.
+- **TC12:** one run blocked the legitimate HTTPS change (score 50, DO_NOT_MERGE; Figure 4.3), one raised a LOW tagging finding, and one was clean.
 - **TC14:** the restricted SSH rule was accepted in two runs. One run confirmed a LOW finding about its wildcard destination, which the ground truth does not treat as a defect.
 
 At run level, 3 of 9 non-vulnerable runs carried at least one confirmed finding.
+
+![Figure 4.3: AI review of the legitimate HTTPS rule in TC12, run 1 (pull request #81), blocking the change](../figures/fig_ss_tc12_pr81.png)
 
 ### Precision of confirmed findings
 
@@ -113,11 +117,11 @@ The combination also inherits both sources of false alarm. These are tfsec's ale
 
 ## 4.5 Comparative Analysis Across TC01–TC15
 
-Figure 4.2 compares detection rates. On the twelve verified original cases the scanners together reached 80% and the AI 90%. On all fifteen cases the scanners together reached 67% and the AI 92% (100% if PARTIAL counts).
+Figure 4.4 compares detection rates. On the twelve verified original cases the scanners together reached 80% and the AI 90%. On all fifteen cases the scanners together reached 67% and the AI 92% (100% if PARTIAL counts).
 
 The gap widened when the three later cases were added, because all three targeted conditions without a scanner rule. This illustrates how strongly such comparisons depend on case selection. The AI's apparent advantage is concentrated in conditions that are contextual (TC13), semantic (TC15) or outside the scanners' rule sets (TC08, TC09). Neither the scanners nor the AI is uniformly stronger: tfsec found the public network rules that Checkov missed, and Checkov found the association, DNS and role conditions that tfsec has no rules for.
 
-![Figure 4.2: Detection rate by tool for the original and extended case sets](../figures/fig_detection_rates.png)
+![Figure 4.4: Detection rate by tool for the original and extended case sets](../figures/fig_detection_rates.png)
 
 Table 4.2: Summary of detection and false-alarm measures
 
@@ -147,9 +151,9 @@ Run-to-run variation affected severity as well as detection. TC05 was rated HIGH
 
 ### Rubric scores
 
-Figure 4.3 summarises the rubric scores. Over the 37 vulnerable-case runs the AI averaged 1.89 out of 2 for detection, remediation and impact. Context awareness averaged 1.97 and developer usefulness 1.76. Explanation accuracy was lowest at 1.65. Eighteen of the 37 runs scored full marks on every dimension.
+Figure 4.5 summarises the rubric scores. Over the 37 vulnerable-case runs the AI averaged 1.89 out of 2 for detection, remediation and impact. Context awareness averaged 1.97 and developer usefulness 1.76. Explanation accuracy was lowest at 1.65. Eighteen of the 37 runs scored full marks on every dimension.
 
-![Figure 4.3: Mean AI quality score by rubric dimension](../figures/fig_ai_quality.png)
+![Figure 4.5: Mean AI quality score by rubric dimension](../figures/fig_ai_quality.png)
 
 The explanation errors fell into three groups:
 
@@ -165,12 +169,14 @@ These scores come from a single application of the rubric by an AI assistant, so
 
 ### Remediation validation
 
-Applying the AI's own recommendations tested whether its advice achieves the secure state (Table 4.3; Figure 4.4). All twelve fixes resolved the target condition against the ground truth and passed formatting and validation. In eight cases the scanner that had flagged the issue confirmed the fix. The other four were cases no scanner could see, so only the ground truth could confirm them.
+Applying the AI's own recommendations tested whether its advice achieves the secure state (Table 4.3; Figure 4.7). All twelve fixes resolved the target condition against the ground truth and passed formatting and validation. In eight cases the scanner that had flagged the issue confirmed the fix. The other four were cases no scanner could see, so only the ground truth could confirm them.
 
 The fresh AI review accepted nine of its own fixes. Two of the rest are revealing:
 
 - **TC07.** The TLS issue disappeared, but the AI then blocked the change over three other storage settings, one of which it had previously classified as needing context.
-- **TC02 and TC03.** The AI rejected its own fixes with HIGH findings. Both reviews quoted the unchanged fixture comment "Deliberately unrestricted…". When only that comment was corrected, TC03 passed cleanly and TC02 received a LOW note. With its comment corrected, TC04 drew a new MEDIUM finding about cleartext HTTP, an issue the AI had not raised when reviewing the original fixture.
+- **TC02 and TC03.** The AI rejected its own fixes with HIGH findings. Both reviews quoted the unchanged fixture comment "Deliberately unrestricted…". When only that comment was corrected, TC03 passed cleanly and TC02 received a LOW note. With its comment corrected, TC04 drew a new MEDIUM finding about cleartext HTTP, an issue the AI had not raised when reviewing the original fixture. Figure 4.6 shows the TC02 pair.
+
+![Figure 4.6: The same TC02 fix reviewed with the stale fixture comment (a) and with the comment corrected (b)](../figures/fig_ss_stale_comment.png)
 
 The third case was never re-reviewed: TC10's fix deleted a file, and the runner skips the AI step when a pull request changes no Terraform file.
 
@@ -192,7 +198,7 @@ Table 4.3: Remediation validation (one review per fix)
 | TC15 | Default removed; `sensitive = true` | Yes | n/a | LOW (no validation block) |
 | TC10 (tags) | Tags added to role definition | Invalid — validate failed | — | Not run |
 
-![Figure 4.4: Outcomes of applying the AI's recommended fixes](../figures/fig_remediation.png)
+![Figure 4.7: Outcomes of applying the AI's recommended fixes](../figures/fig_remediation.png)
 
 ### Comments as evidence
 
@@ -207,7 +213,7 @@ This is useful when comments are accurate. It also means that comments can lower
 
 ## 4.8 Execution Time and Operational Performance
 
-Figure 4.5 shows median step durations across the 46 runs:
+Figure 4.8 shows median step durations across the 46 runs:
 
 | Step | Median duration |
 |--------------------------|--------------------------|
@@ -219,7 +225,7 @@ Figure 4.5 shows median step durations across the 46 runs:
 
 The AI step accounted for about 41% of job time and was the only step whose duration varied widely, because it depends on an external service. For a pull-request workflow these times are small. Feedback arrived in under two minutes in every pull-request run. Cost and API availability, which the study did not measure, are the more relevant operational constraints.
 
-![Figure 4.5: Median pipeline step durations](../figures/fig_timing.png)
+![Figure 4.8: Median pipeline step durations](../figures/fig_timing.png)
 
 ## 4.9 Discussion Against the Research Questions and Existing Literature
 
