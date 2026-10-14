@@ -1,13 +1,13 @@
 // Slide-by-slide script data shared by the Word file and the read-aloud page.
-const S = require('./script_v3.js');
+const S = require('./script_v4.js');
 const WPM = 125;
 const TITLES = [
   'Title and introduction',
   'Can an AI reviewer catch what scanners miss?',
   'How the literature shaped the study',
   'What I built: three independent reviewers',
-  'How I tested it: fixed ground truth, repeated runs',
-  'RQ1: the AI detected more than both scanners',
+  'How I tested it: fixed answers, three runs each',
+  'RQ1: the AI found more than the scanners combined',
   'RQ2 and RQ3: useful advice, but some false claims',
   'RQ4: code comments changed the AI’s verdict',
   'Evaluation: what holds up, and its limits',
