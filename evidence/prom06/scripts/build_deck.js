@@ -523,7 +523,11 @@ async function setLanguage(file) {
   const names = Object.keys(zip.files).filter((n) => /^ppt\/(slides|notesSlides|slideLayouts|slideMasters|notesMasters)\/[^/]+\.xml$/.test(n) || n === "ppt/presentation.xml");
   for (const n of names) {
     const x = await zip.file(n).async("string");
-    if (x.includes('lang="en-US"')) zip.file(n, x.replace(/lang="en-US"/g, 'lang="en-GB"'));
+    // UK English proofing; and title placeholders in PowerPoint's own form (<p:ph type="title"/>, no idx)
+    // so every tool recognises the slide titles, not only PowerPoint
+    const y = x.replace(/lang="en-US"/g, 'lang="en-GB"')
+      .replace(/<p:ph\b[^>]*\btype="title"[^>]*>/g, (m) => m.replace(/\s+idx="\d+"/, ""));
+    if (y !== x) zip.file(n, y);
   }
   fs.writeFileSync(file, await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
 }
