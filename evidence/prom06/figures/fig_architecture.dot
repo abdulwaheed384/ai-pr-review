@@ -24,10 +24,10 @@ digraph G {
     tf -> ck; tf -> ts; tf -> ai;
     ck -> out; ts -> out; ai -> out;
     ts -> ai [ltail=cluster_scan, style=dashed, color="#d03b3b", fontcolor="#a32626", constraint=false,
-              label=<<font point-size="8.5">before 13 Oct only:<br/>scanner results were<br/>also given to the AI</font>>];
+              label=<<font point-size="8.5">earlier runs only:<br/>scanner results were<br/>also given to the AI</font>>];
   }
 
-  gt [label=<<b>5. Researcher compares every result with the ground truth</b>>, fillcolor="#f4f3f0"];
+  gt [label=<<b>5. Every result is checked against the ground truth</b>>, fillcolor="#f4f3f0"];
 
   pr -> tf; out -> gt;
   {rank=same; ck; ts; ai;}
