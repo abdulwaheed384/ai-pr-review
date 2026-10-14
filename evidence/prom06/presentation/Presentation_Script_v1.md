@@ -2,7 +2,7 @@
 
 Deck: PROM06_Presentation_AbdulWaheed_209333039.pptx (10 slides, 16:9, UK English proofing). The same script is in each slide's speaker notes.
 
-Script length: about 1667 words, roughly 12 to 13.5 minutes at a normal speaking pace (the brief asks for 10 to 15 minutes, with no more than 10 slides).
+Script length: about 1673 words, roughly 12 to 13.5 minutes at a normal speaking pace (the brief asks for 10 to 15 minutes, with no more than 10 slides).
 
 ## Slide 1: Title: Evaluating AI-Driven Security Review in Modern DevSecOps Pipelines
 
@@ -64,7 +64,7 @@ Here's how I tested it. I wrote fifteen Terraform test cases and fixed the corre
 
 Each case was opened as a pull request and then run twice more, giving forty-six independent runs. I classified every output against the ground truth, scored the AI's output on six dimensions I had fixed in advance, and finally applied the AI's own fixes and ran all the checks again.
 
-One discovery changed the study. When I traced my early results back to their workflow runs, I found the AI had been given the scanners' findings in its prompt, so those results weren't independent. I changed the workflow in pull request 69, reran every case, and checked the metadata of all forty-six runs.
+One discovery changed the study. When I traced my early results back to their workflow runs, I found the AI had been given the scanners' findings in its prompt, so those results weren't independent. I changed the workflow in pull request 69, ran every case with the AI working independently, and checked the metadata of all forty-six runs.
 
 Ethically, everything was synthetic: dummy secrets, documentation IP addresses, nothing merged or deployed, and no personal data.
 
@@ -78,7 +78,7 @@ Three things stand out. First, three cases were found only by the AI: two hard-c
 
 Second, the scanners barely overlapped. Only the weak-TLS case was caught by both, and Checkov passed rules open to 0.0.0.0/0 but failed the very same rule written with a star.
 
-Third, the AI made a different kind of error. Three of nine runs on acceptable configurations raised a finding, and once it blocked a legitimate HTTPS change, the kind of false alarm that erodes trust in tools. Of its forty-five confirmed findings, 82 per cent were correct, or 89 per cent if three findings about weaknesses in my own test files count as valid.
+Third, the AI made a different kind of error. Three of nine runs on acceptable configurations raised a finding, and once it blocked a legitimate HTTPS change, the kind of false alarm that erodes trust in tools. Of the forty-five findings it posted, 82 per cent were correct, or 89 per cent if three findings about weaknesses in my own test files count as valid.
 
 The whole gap comes from three cases no scanner rule covers, and these numbers describe my fifteen cases, not real-world rates.
 
@@ -112,7 +112,7 @@ So how far can these results be trusted? What holds up best is structural: scann
 
 The limits are real. Fifteen constructed cases, one cloud, one model and one prompt can't represent real repositories, and I partly chose cases where scanner rules were weak. As Ding and colleagues warn, constructed test sets can flatter AI models. Comments in my test files may have cued the AI, only the AI got the policy file, and the scoring was done once, with AI assistance.
 
-My biggest lesson came from my own mistake. Results I first treated as independent were not. Rerunning everything cost time, but it saved the study, and now I only treat a result as established when I can link it to a run, a commit and the raw output.
+My biggest lesson came from my own mistake. Results I first treated as independent were not. Fixing it cost time, but it saved the study, and now I only treat a result as established when I can link it to a run, a commit and the raw output.
 
 Overall, all four objectives were met, with the evaluation valid within the limits of the sample.
 

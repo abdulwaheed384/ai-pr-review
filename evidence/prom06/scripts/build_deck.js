@@ -212,7 +212,7 @@ async function build() {
   const litRows = [
     ["Developers ignore noisy, poorly explained warnings (Johnson et al., 2013)", "Measured false alarms and scored the explanations, not only detections"],
     ["IaC “security smells”, such as open addresses and hard-coded secrets, recur in real scripts (Rahman et al., 2019)", "Linked the test cases to documented smells: TC02–TC04 (open addresses), TC09 and TC15 (secrets)"],
-    ["Hybrid designs feed static-analysis output to the LLM (Li et al., 2024), so the AI’s own share is hidden", "Kept the AI independent of the scanners and reran every case that way"],
+    ["Hybrid designs feed static-analysis output to the LLM (Li et al., 2024), so the AI’s own share is hidden", "Kept the AI independent of the scanners and ran every case that way"],
     ["LLMs give different answers to the same request (Ouyang et al., 2025)", "Repeated every AI review three times on identical input"],
     ["LLM claims and fixes can be wrong (Ji et al., 2023; Pearce et al., 2023)", "Applied every AI fix and re-tested it with validate, both scanners and the AI"],
   ];
@@ -326,12 +326,12 @@ async function build() {
     const fill = { color: i % 2 === 0 ? C.background1 : C.background2 };
     tcRows.push([tcCell(a, { bold: true, fill, color: i === 4 ? C.accent4 : C.text2 }), tcCell(b, { fill })]);
   });
-  const tblW = 7.45;
+  const tblW = 7.05;
   s.addTable(tcRows, { x: L, y: 3.65, w: tblW, colW: [1.85, tblW - 1.85], fontSize: 13, valign: "middle", margin: [0.04, 0.1, 0.04, 0.1],
     border: { type: "solid", pt: 0.75, color: LINE }, rowH: [0.36, 0.52, 0.36, 0.36, 0.52, 0.52], lang: LANG, objectName: "Test case table" });
   const ix = L + tblW + 0.3, iw = R - ix;
   iconCard(s, ix, 3.65, iw, 1.62, "FaFingerprint", C.accent1, "Independence check",
-    "Early AI runs saw scanner findings in their prompt. I fixed the workflow (PR #69), reran every case and checked all 46 runs’ metadata.",
+    "Early AI runs saw scanner findings in their prompt. I fixed the workflow (PR #69), ran every case independently and checked all 46 runs’ metadata.",
     { cardFill: C.text2, headColor: C.background1, bodyColor: C.background1, d: 0.5 });
   iconCard(s, ix, 5.45, iw, 1.15, "FaUserShield", C.accent4, "Ethics",
     "Synthetic code, dummy secrets, documentation IPs; nothing deployed; no personal data.", { d: 0.5, headSize: 14, bodySize: 13 });
@@ -355,7 +355,7 @@ async function build() {
   [
     ["FaMagnifyingGlass", C.accent1, "Found only by the AI", "TC09 and TC15 (hard-coded secrets) and TC13 (a role judged against a separate requirements file)."],
     ["FaCodeCompare", C.accent2, "The scanners barely overlapped", "Only TC07 was caught by both. Checkov passed rules open to 0.0.0.0/0 but failed the same rule written as *."],
-    ["FaTriangleExclamation", C.accent5, "But the AI over-reported", "3 of 9 runs on acceptable cases raised a finding. 82% of its 45 confirmed findings were correct (89% if three fixture issues count)."],
+    ["FaTriangleExclamation", C.accent5, "But the AI over-reported", "3 of 9 runs on acceptable cases raised a finding. 82% of the 45 findings it posted were correct (89% if three fixture issues count)."],
   ].forEach(([ic, fill, head, body], i) => iconCard(s, c6x, 1.45 + i * 1.6, c6w, 1.45, ic, fill, head, body));
   txt(s, "Descriptive results for 15 constructed cases; the whole gap comes from TC09, TC13 and TC15, which no scanner rule covers. AI detection = target confirmed in every run (34 of 37 runs); TC08 partial = raised in all 4 runs, shown in 1.",
     { x: L, y: 6.33, w: CW, h: 0.5, fontSize: 11, italic: true, color: C.accent6, objectName: "Caveat" });
@@ -447,7 +447,7 @@ async function build() {
       "Single-rater, AI-assisted scoring; three runs show variation but cannot measure it",
     ]],
     ["FaLightbulb", C.accent1, "What I learned", [
-      "My first “AI-only” results were scanner-informed; I fixed the workflow and reran everything",
+      "My first “AI-only” results were scanner-informed; I fixed the workflow and ran every case independently",
       "A result counts only when tied to a run, a commit and the raw output",
       "Next time: prove independence first, strip comments, pin every version, add a second scorer",
     ]],
