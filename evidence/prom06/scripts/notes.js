@@ -1,116 +1,13 @@
-// Speaker notes (spoken script), one entry per slide. British English, first person.
+// Speaker notes (simple spoken script v2), generated from script_v2.js
 module.exports = [
-// 1
-`[Slide 1 · about 40 seconds]
-
-Hello, I'm Abdul Waheed. This is my PROM06 research project for the MSc in Computer Science with Cybersecurity at the University of Sunderland, supervised by Liz Gandy.
-
-My project evaluates AI-driven security review in a DevSecOps pipeline. I built a pipeline where two established scanners, Checkov and tfsec, and an AI reviewer all review the same Terraform pull requests. Then I compared their results against answers I had fixed in advance.
-
-I'll cover why this matters, what I built, how I tested it, what I found and what it means.`,
-
-// 2
-`[Slide 2 · about 1 minute 25 seconds]
-
-Cloud infrastructure is now written as code. With Terraform, one insecure line, such as a firewall rule open to the whole internet, is copied into every environment that uses it. And under the shared-responsibility model, getting that configuration right is the customer's job.
-
-Teams usually catch these mistakes with rule-based scanners. They are fast and consistent, but they only find what their rules describe, and developers tend to ignore noisy, poorly explained warnings.
-
-AI reviewers promise something different. They read the whole configuration and explain problems in plain language. But they can also state false things with confidence, and give different answers to the same input.
-
-So my aim was to evaluate how effective an AI security reviewer is in a DevSecOps pipeline, compared with Checkov and tfsec. My four questions cover detection accuracy, the quality of its fixes, its likely effect on developer understanding, and the practical challenges of using it. My objectives were to review the literature, build the pipeline, evaluate it against a fixed ground truth, and investigate the benefits and limits.
-
-This sits at the heart of my programme: secure software delivery, cloud security and the safe use of AI.`,
-
-// 3
-`[Slide 3 · about 1 minute 20 seconds]
-
-The literature shaped both how I designed the study and how I read the results.
-
-Johnson and colleagues found that developers abandon tools whose warnings are noisy and poorly explained, so I measured false alarms and scored the explanations, not just detections.
-
-Rahman and colleagues documented security smells that keep appearing in infrastructure code, such as open network addresses and hard-coded secrets, and several of my test cases are exactly these.
-
-Hybrid designs, like the one by Li and colleagues, pass the scanner's output to the language model. Then you can't tell what the AI found on its own, so I kept my reviewer independent.
-
-The last two rows I added once my early results showed they mattered. Models answer the same request differently, so I repeated every review. And their claims and fixes can be wrong, so I applied every fix and tested it again.
-
-The gap is the lack of head-to-head evidence: an AI reviewer against Terraform scanners, on the same changes and a fixed ground truth, with independence, repeatability and fixes tested together.`,
-
-// 4
-`[Slide 4 · about 1 minute 25 seconds]
-
-This is what I built. Every Terraform pull request starts one GitHub Actions job. It first checks that the code is valid. It never runs plan or apply, so nothing is ever deployed. Then three reviewers run: Checkov, tfsec and my AI reviewer, which sends all the Terraform files, a short policy file and the README to Claude, and asks for a structured answer with at most three findings. Each tool posts its own comment on the pull request, every raw output is saved, and no tool sees another tool's results.
-
-On the right is real output from pull request 71. This is test case TC02, where SSH is open to the whole internet. Checkov passed seven checks and failed none, so it missed the problem. tfsec flagged it as critical. The AI reviewer flagged it as high, and explained the risk and how to fix it.
-
-[Optional demo, about 30 seconds: open pull request 71 on GitHub and scroll through the three comments.]
-
-All the code and run evidence are public in my GitHub repository.`,
-
-// 5
-`[Slide 5 · about 1 minute 20 seconds]
-
-Here's how I tested it. I wrote fifteen Terraform test cases and fixed the correct answer for each one before running any tool. Twelve contain a vulnerability, across network exposure, encryption, logging, secrets and identity. Three are acceptable, including a web endpoint that is meant to be public, to check whether the tools raise false alarms.
-
-Each case was opened as a pull request and then run twice more, giving forty-six independent runs. I classified every output against the ground truth, scored the AI's output on six dimensions I had fixed in advance, and finally applied the AI's own fixes and ran all the checks again.
-
-One discovery changed the study. When I traced my early results back to their workflow runs, I found the AI had been given the scanners' findings in its prompt, so those results weren't independent. I changed the workflow in pull request 69, ran every case with the AI working independently, and checked the metadata of all forty-six runs.
-
-Ethically, everything was synthetic: dummy secrets, documentation IP addresses, nothing merged or deployed, and no personal data.`,
-
-// 6
-`[Slide 6 · about 1 minute 25 seconds]
-
-Now the results, starting with RQ1, detection accuracy. Of the twelve vulnerable cases, Checkov found five and tfsec four, eight together. The AI reviewer found eleven, and partly found a twelfth: it noticed a missing logging setting in all four runs, but showed it to the developer only once.
-
-Three things stand out. First, three cases were found only by the AI: two hard-coded secrets, and an over-privileged role that could only be judged against a separate requirements file.
-
-Second, the scanners barely overlapped. Only the weak-TLS case was caught by both, and Checkov passed rules open to 0.0.0.0/0 but failed the very same rule written with a star.
-
-Third, the AI made a different kind of error. Three of nine runs on acceptable configurations raised a finding, and once it blocked a legitimate HTTPS change, the kind of false alarm that erodes trust in tools. Of the forty-five findings it posted, 82 per cent were correct, or 89 per cent if three findings about weaknesses in my own test files count as valid.
-
-The whole gap comes from three cases no scanner rule covers, and these numbers describe my fifteen cases, not real-world rates.`,
-
-// 7
-`[Slide 7 · about 1 minute 20 seconds]
-
-For RQ2, I didn't just read the AI's fixes, I applied them. All twelve resolved the problem and passed validation, and for eight, the scanner that had flagged the issue confirmed the fix. On a fresh AI review, nine no longer raised the original problem.
-
-But one recommendation was simply wrong. In a TC10 run, the AI claimed a role definition must carry tags. Applying that made terraform validate fail, as you can see here.
-
-For RQ3, I judged the likely effect on developer understanding from the feedback itself. The chart shows the average rubric scores over thirty-seven runs. The AI explained what was wrong, why it mattered and how to fix it, in plain language, while the scanners gave a rule ID and one generic line. That points to a positive likely impact.
-
-The weakest score was explanation accuracy, at 1.65. Some explanations stated false platform facts with confidence, the hallucination problem from the literature, and a developer could learn those as facts. These scores come from a single rater, with AI assistance, and every score's reasoning is recorded.`,
-
-// 8
-`[Slide 8 · about 1 minute 25 seconds]
-
-RQ4 is about practical challenges, and this was my most surprising finding. On the left is the same TC02 fix, reviewed twice. In version A, the old comment "Deliberately unrestricted SSH access" was still in the file. The AI raised a high-severity finding against its own fix and quoted that comment. In version B, only the comment changed, and the AI approved it with a low note. TC03 behaved the same way.
-
-So text in the code can raise or lower the AI's verdict, whatever the configuration says. This is a form of indirect prompt injection, as Greshake and colleagues describe. In a real pull request, anyone who can write a comment could influence the reviewer.
-
-Three other challenges. The same input gave different answers: TC08 was classified three ways in four runs, and TC05 was rated high, high, then medium. Findings could be hidden or skipped: a "needs context" finding never reaches the developer, and a pull request that only deletes a file skips the AI step. The time cost, though, was small: a median of 31.5 seconds for the AI, and comments in under two minutes.`,
-
-// 9
-`[Slide 9 · about 1 minute 20 seconds]
-
-So how far can these results be trusted? What holds up best is structural: scanner coverage depends on rules, the two scanners complemented each other, the AI found problems that need context, and its errors were less predictable.
-
-The limits are real. Fifteen constructed cases, one cloud, one model and one prompt can't represent real repositories, and I partly chose cases where scanner rules were weak. As Ding and colleagues warn, constructed test sets can flatter AI models. Comments in my test files may have cued the AI, only the AI got the policy file, and the scoring was done once, with AI assistance.
-
-My biggest lesson came from my own mistake. Results I first treated as independent were not. Fixing it cost time, but it saved the study, and now I only treat a result as established when I can link it to a run, a commit and the raw output.
-
-Overall, all four objectives were met, with the evaluation valid within the limits of the sample.`,
-
-// 10
-`[Slide 10 · about 1 minute 10 seconds]
-
-So, can AI-assisted review improve infrastructure-as-code security analysis? On these fifteen cases, the answer is a qualified yes. It improved coverage, finding everything the scanners found plus three cases they missed. But its errors were less predictable, so it shouldn't replace the scanners or decide merges.
-
-My recommendations are on the left: let the scanners enforce and the AI advise; run more than one scanner; treat comments and pull-request text as untrusted; show uncertain findings instead of hiding them; validate AI fixes automatically; and review deletion-only changes and log the model version.
-
-For future research, the next step is realism: real Terraform changes from public repositories, many more runs across several models, a deliberate study of comment manipulation, and a study with developers.
-
-The references are on the right, and all the code and evidence are on GitHub. Thank you for listening.`,
+ "[Slide 1 · about 0:45 · 0:45 in total]\n\nHello, my name is Abdul Waheed. This is my PROM06 research project for the MSc in Computer Science with Cybersecurity at the University of Sunderland. My supervisor is Liz Gandy.\n\nMy project evaluates AI-driven security review in a DevSecOps pipeline. In simple terms, I built a pipeline where three reviewers check the same Terraform code: two well-known scanners, Checkov and tfsec, and an AI reviewer. Then I compared their results.\n\nI’ll explain why this matters, what I built, how I tested it, what I found and what it means.",
+ "[Slide 2 · about 1:25 · 2:10 in total]\n\nToday, cloud infrastructure is written as code. With Terraform, one insecure line, such as a firewall rule open to the whole internet, is copied into every environment that uses it. And in the cloud, setting things up securely is the customer’s job, not the provider’s.\n\nMost teams catch these mistakes with rule-based scanners. They are fast and consistent, but they only find what their rules describe. And developers often ignore warnings that are noisy or hard to understand.\n\nAI reviewers work differently. They read the whole configuration and explain problems in plain language. But they can also be confidently wrong, and give different answers to the same question.\n\nSo my aim was to evaluate how well an AI security reviewer works in a DevSecOps pipeline, compared with Checkov and tfsec. I asked four questions: how accurate it is, how good its fixes are, how it is likely to affect developer understanding, and what problems come up in practice. My objectives were to review the literature, build the pipeline, test it against fixed answers, and find its benefits and limits.",
+ "[Slide 3 · about 1:20 · 3:30 in total]\n\nThe research I read shaped how I designed this study.\n\nJohnson and colleagues found that developers stop using tools with noisy, unclear warnings. So I didn’t only count what each tool found. I also counted false alarms and scored the explanations.\n\nRahman and colleagues listed common security mistakes in infrastructure code, such as open network rules and secrets written into the code. Several of my test cases are exactly these mistakes.\n\nSome tools, like the one by Li and colleagues, give the scanner’s results to the AI. Then you can’t tell what the AI found by itself. So I kept my AI reviewer separate.\n\nI added two more ideas once my early results showed they mattered. AI can answer the same question differently, so I ran every review three times. And AI fixes can be wrong, so I applied every fix and tested it again.\n\nThe gap is simple: there are very few fair, direct comparisons of an AI reviewer with Terraform scanners.",
+ "[Slide 4 · about 1:10 · 4:40 in total]\n\nThis is what I built. When a developer opens a pull request with Terraform code, GitHub Actions starts one job.\n\nFirst, it checks that the code is valid. It never deploys anything.\n\nThen three reviewers check the same code. Checkov and tfsec use fixed rules. My AI reviewer sends all the Terraform files, a short security policy and the README to Claude, and asks for a structured answer with at most three findings. Each tool posts its own comment on the pull request, and no tool sees another tool’s results.\n\nOn the right are real results from pull request 71. In this test, SSH is open to the whole internet. Checkov passed seven checks and found nothing, so it missed the problem. tfsec flagged it as critical. The AI reviewer flagged it as high, and explained the risk and the fix.\n\n[Optional demo, about 30 seconds: open pull request 71 on GitHub and scroll through the three comments.]\n\nAll the code and evidence are public on my GitHub.",
+ "[Slide 5 · about 1:25 · 6:05 in total]\n\nHere is how I tested it.\n\nI wrote fifteen Terraform test cases. For each one, I wrote down the correct answer before running any tool. I call this the ground truth. Twelve cases have a security problem. Three are safe, including a web server that is meant to be public. These check for false alarms.\n\nI opened each case as a pull request and ran it twice more. With one extra run after a failed one, that gave forty-six runs. I checked every result against the ground truth and scored the AI on six criteria I fixed in advance. Finally, I applied the AI’s own fixes and tested them again.\n\nOne discovery changed the study. When I traced my early results back, I found the AI had been given the scanners’ findings, so those results were not independent. I fixed the workflow in pull request 69, ran every case with the AI working on its own, and checked all forty-six runs to prove it.\n\nEverything was synthetic: fake secrets, nothing deployed and no personal data.",
+ "[Slide 6 · about 1:25 · 7:30 in total]\n\nNow the results. My first question was about detection.\n\nOut of twelve cases with a problem, Checkov found five and tfsec found four. Together, they found eight. The AI reviewer found eleven, and part of a twelfth. In that case, it noticed the problem every time but showed it to the developer only once.\n\nThree things stand out. First, three problems were found only by the AI: two secrets written into the code, and a role with too much access, which it spotted by comparing it with a separate requirements file.\n\nSecond, the scanners barely overlapped. Only one case was caught by both. And Checkov missed rules open to 0.0.0.0/0, but caught the same rule written as a star.\n\nThird, the AI made a different kind of mistake. Three of nine runs on safe cases raised a finding. Of the forty-five findings it posted, 82 per cent were correct, or 89 per cent if three findings about weaknesses in my own test files count as valid.\n\nThese numbers describe my fifteen cases only, not the real world.",
+ "[Slide 7 · about 1:30 · 9:00 in total]\n\nMy second question was about the quality of the AI’s fixes. I didn’t just read them. I applied them.\n\nAll twelve fixes solved the problem and passed Terraform’s checks. For eight of them, a scanner also confirmed the fix. When the AI reviewed its own fixes, nine of the twelve no longer raised the problem.\n\nBut one piece of advice was simply wrong. The AI said a role definition needs tags. When I applied that, Terraform failed with the error you can see here.\n\nMy third question was about the likely effect on developers’ understanding. I judged this from the feedback itself. The chart shows the average scores out of two. The AI explained what was wrong, why it mattered and how to fix it, in plain language. The scanners only gave a rule ID and one short line. So the likely effect is positive.\n\nThe lowest score was for the accuracy of explanations. Sometimes the AI stated something false with confidence, and a developer could learn it as fact. These scores come from one scoring pass with AI help, and no second rater.",
+ "[Slide 8 · about 1:30 · 10:30 in total]\n\nMy fourth question was about practical challenges, and this was my most surprising finding.\n\nOn the left is the same fix, reviewed twice. The only difference is a comment in the code.\n\nIn version A, an old comment still said “Deliberately unrestricted SSH access”. The AI gave its own fix a high-severity finding and quoted that comment. In version B, I only corrected the comment, and the AI approved the change with just a low note. Another test case behaved the same way.\n\nSo text in the code can change the AI’s verdict, even when the code is the same. This is a form of what Greshake and colleagues call indirect prompt injection. In a real team, anyone who can write a comment could influence the AI.\n\nI found three more challenges. The same input gave different answers: one case was classified three different ways in four runs. Some real findings were hidden from the developer, and pull requests that only delete files skipped the AI completely. Time was not a problem: the AI took about thirty seconds, and feedback arrived in under two minutes.",
+ "[Slide 9 · about 1:20 · 11:50 in total]\n\nSo, how far can we trust these results?\n\nSome findings are strong. Scanners only cover what their rules describe. The two scanners complemented each other. The AI found problems that need context, and its mistakes were less predictable.\n\nBut there are real limits. I used fifteen test cases that I built myself, one cloud, one AI model and one prompt. I also chose some cases where scanner rules were weak, which makes the AI look better. As Ding and colleagues warn, test sets like this can flatter AI. Comments in my test files may have given the AI hints. And the scoring was done once, without a second person.\n\nMy biggest lesson came from my own mistake. Results I first thought were independent were not. Fixing that cost time, but it saved the study. Now I only trust a result when I can link it to a run, a commit and the raw output.\n\nOverall, all four objectives were met, within the limits of this sample.",
+ "[Slide 10 · about 1:10 · 13:00 in total]\n\nSo, can AI improve the security review of infrastructure code? On these fifteen cases, my answer is a qualified yes. The AI found everything the scanners found, plus three problems they missed. But its mistakes were less predictable. So it should support the scanners, not replace them, and it should not decide which changes get merged.\n\nMy recommendations are on the left: let the scanners enforce and the AI advise, use more than one scanner, treat comments as untrusted, show uncertain findings, test every AI fix automatically, and review changes that only delete files.\n\nFor future work, I would test real-world Terraform changes, run many more reviews across different AI models, study comment manipulation on purpose, and test the feedback with real developers.\n\nThe references are on this slide, and the code and evidence are on GitHub. Thank you for listening."
 ];
