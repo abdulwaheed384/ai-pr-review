@@ -1,0 +1,33 @@
+digraph G {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=10, bgcolor="#fcfcfb", nodesep=0.5, ranksep=0.28, pad=0.2];
+  node  [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#52514e", fontname="DejaVu Sans", fontsize=9.5, fontcolor="#0b0b0b"];
+  edge  [color="#52514e", fontname="DejaVu Sans", fontsize=8, fontcolor="#52514e"];
+
+  dev  [label="Test-case branch\n(Terraform fixture,\nground truth fixed first)"];
+  pr   [label="GitHub pull request\n(or workflow_dispatch\nfor repeat runs)"];
+  subgraph cluster_job {
+    label="GitHub Actions job — \"PROM06 Experimental Security Review\" \nsteps run in sequence; in INDEPENDENT mode\nno tool receives another tool's output";
+    fontsize=9.5; color="#86b6ef"; style="rounded"; fontcolor="#1c5cab"; labelloc="t"; labeljust="l";
+    cond [label="Record condition\nINDEPENDENT\n(experiment-metadata.json)"];
+    tfv  [label="terraform init\nfmt -check, validate"];
+    ck   [label="Checkov 3.3.1\n--framework terraform"];
+    ts   [label="tfsec 1.28.14"];
+    ai   [label="AI review\nreview_runner.py\n→ Claude API\n(claude-sonnet-4-6)", fillcolor="#cde2fb"];
+    ctx  [label="AI context:\nchanged .tf + all terraform/*.tf\nai/prompt.txt, ai/policy.md, README.md", shape=note, fillcolor="#f0efec"];
+    val  [label="Validate JSON,\nclassify, score\n(only CONFIRMED\nshown and scored)"];
+    out  [label="Three PR comments\n+ raw artefacts\n(JSON, logs, metadata)"];
+    cond -> tfv; tfv -> ck; tfv -> ts; tfv -> ai; ai -> val;
+    ck -> out; ts -> out; val -> out;
+    {rank=same; ck; ts;}
+    cc [label="Condition C only (9–12 Oct):\nnormalised Checkov/tfsec findings\nadded to the AI prompt —\nremoved by PR #69 (13 Oct)", shape=note, fontcolor="#d03b3b", color="#d03b3b", fillcolor="#fcfcfb", fontsize=8.5];
+    ck -> cc [style=dashed, color="#d03b3b"]; ts -> cc [style=dashed, color="#d03b3b"]; cc -> ai [style=dashed, color="#d03b3b"];
+    {rank=same; cc; ctx;}
+    
+    ctx -> ai [style=dotted];
+  }
+  gt   [label="Researcher comparison\nagainst ground truth\n→ results workbook", fillcolor="#f0efec"];
+  dev -> pr -> cond;
+  {rank=same; dev; pr;}
+  out -> gt;
+
+}
