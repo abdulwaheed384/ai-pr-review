@@ -5,7 +5,7 @@ const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell,
   WidthType, ShadingType, BorderStyle, Header, Footer, PageNumber, LevelFormat,
 } = require('/opt/npm-tools/node_modules/docx');
-const { slides, totalWords, totalTime, WPM } = require('./script_data.js');
+const { slides, totalWords, totalTime, WPM, approxWords, approxMinutes } = require('./script_data.js');
 
 const OUT = process.argv[2] || path.join(__dirname, 'PROM06_Speaker_Script.docx');
 const NAVY = '08233E', STEEL = '156082', FLAME = 'C73D1A', GREY = '5B6670', TINT = 'EEF2F6', LINE = 'D3DAE2';
@@ -23,7 +23,7 @@ const cover = [
   p([t('Abdul Waheed · Student number 209333039 · MSc Computer Science with Cybersecurity', { size: 22, color: GREY })], { spacing: { after: 360 } }),
   p([t('How to use this script')], { heading: HeadingLevel.HEADING_2 }),
   ...[
-    `It is about ${(Math.round(totalWords / 100) * 100).toLocaleString('en-GB')} words and takes about ${totalTime.replace(':00', '')} minutes at a steady pace (${WPM} words a minute). The brief allows 10 to 15 minutes.`,
+    `It is about ${approxWords} words and takes about ${approxMinutes} minutes at a steady pace (${WPM} words a minute). The brief allows 10 to 15 minutes.`,
     'Each slide starts on a new page. The line above each heading gives the time for that slide and the running total.',
     'Text in a grey box is a note for you, not something to say.',
     'The same script is in the speaker notes of the PowerPoint file, so it shows on screen while you record.',

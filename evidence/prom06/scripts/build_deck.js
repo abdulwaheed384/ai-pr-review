@@ -380,7 +380,7 @@ async function build() {
     run("An argument named \"tags\" is not expected here", { fontSize: 13, color: C.accent1, bold: true, fontFace: MONO })],
     { x: L + 0.2, y: 5.5, w: lw7 - 0.4, h: 0.95, valign: "middle", paraSpaceAfter: 3, objectName: "Validate error" });
   const rx7 = 6.75, rw7 = R - rx7;
-  label(s, "RQ3 · Likely impact on understanding", rx7, 1.45, rw7);
+  label(s, "RQ3 · Do AI comments help understanding?", rx7, 1.45, rw7);
   s.addChart(pres.charts.BAR, [{ name: "Mean score (0–2)", labels: ["Explanation accuracy", "Developer usefulness", "Remediation", "Impact", "Detection", "Context awareness"], values: [1.65, 1.76, 1.89, 1.89, 1.89, 1.97] }], {
     x: rx7, y: 1.75, w: rw7, h: 3.05, barDir: "bar", barGapWidthPct: 45,
     chartColors: [H.accent1, H.accent2, H.accent2, H.accent2, H.accent2, H.accent2],
@@ -388,14 +388,15 @@ async function build() {
     catAxisLabelFontFace: "+mn-lt", catAxisLabelFontSize: 13, catAxisLabelColor: H.dk1,
     valAxisLabelFontFace: "+mn-lt", valAxisLabelFontSize: 12, valAxisLabelColor: "5B6670", valAxisLabelFormatCode: "0.0",
     valAxisMinVal: 0, valAxisMaxVal: 2, valAxisMajorUnit: 0.5, valGridLine: { color: "E1E6EC", size: 0.75 }, catGridLine: { style: "none" },
-    showLegend: false, showTitle: true, title: "Mean rubric score, 37 vulnerable-case runs (0–2)", titleFontFace: "+mn-lt", titleFontSize: 13, titleColor: H.dk2,
+    showLegend: false, showTitle: true, title: "Average score out of 2 (37 runs)", titleFontFace: "+mn-lt", titleFontSize: 13, titleColor: H.dk2,
     lang: LANG, objectName: "Rubric chart",
   });
-  txt(s, [run("Plain-language, code-specific explanations of what, why and how to fix, versus a rule ID and one generic line from the scanners: a likely positive effect. "),
-    run("Risk: ", { bold: true, color: C.accent1 }), run("accuracy scored lowest, as confident false platform claims could be learned as fact (Ji et al., 2023).")],
-    { x: rx7, y: 4.95, w: rw7, h: 1.2, objectName: "RQ3 takeaway" });
-  txt(s, "Scores: single rater with AI assistance; every score’s justification is recorded.",
-    { x: rx7, y: 6.22, w: rw7, h: 0.3, fontSize: 11, italic: true, color: C.accent6, objectName: "Scoring caveat" });
+  txt(s, [run("Likely to help: ", { bold: true, color: C.accent4 }),
+    run("in plain English, the AI said what was wrong, why it matters and how to fix it. Scanners gave a rule and a short line.", { breakLine: true }),
+    run("Risk: ", { bold: true, color: C.accent1 }), run("explanation accuracy scored lowest, because some confident claims were false (Ji et al., 2023).")],
+    { x: rx7, y: 4.95, w: rw7, h: 1.2, paraSpaceAfter: 6, objectName: "RQ3 takeaway" });
+  txt(s, "Scored once, with AI help; the reason for each score is recorded.",
+    { x: rx7, y: 6.3, w: rw7, h: 0.3, fontSize: 11, italic: true, color: C.accent6, objectName: "Scoring caveat" });
   s.addNotes(NOTES[6]);
 
   // ===== 8 RQ4 =====

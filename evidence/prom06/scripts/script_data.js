@@ -1,5 +1,5 @@
 // Slide-by-slide script data shared by the Word file and the read-aloud page.
-const S = require('./script_v2.js');
+const S = require('./script_v3.js');
 const WPM = 125;
 const TITLES = [
   'Title and introduction',
@@ -26,7 +26,9 @@ const slides = S.map((body, i) => {
     /^\[Optional demo/.test(p) ? { note: 'Optional demo' + demoMatch[1].replace(/^,\s*/, ', ').trim() } : { text: p });
   return { n: i + 1, title: TITLES[i], sec, time: fmt(sec), total: fmt(total), words: w, paras };
 });
-module.exports = { slides, totalWords: words, totalTime: fmt(total), WPM };
+const approxWords = (Math.round(words / 50) * 50).toLocaleString('en-GB');
+const approxMinutes = Math.round(total / 60);
+module.exports = { slides, totalWords: words, totalTime: fmt(total), WPM, approxWords, approxMinutes };
 if (require.main === module) {
   slides.forEach((s) => console.log(s.n, s.time, s.total, s.words, s.paras.map((p) => p.note ? 'NOTE' : 'p').join(',')));
   console.log(words, fmt(total));
