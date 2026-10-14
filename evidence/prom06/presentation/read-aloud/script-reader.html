@@ -1,0 +1,219 @@
+<title>PROM06 Speaker Script</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column of ten slide sections; a sticky player above; the sentence being read is shaded */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --fg:#16202b; --muted:#5b6670; --line:#d6dce3;
+  --accent:#156082; --accent-fg:#ffffff; --label:#b8391a; --note:#eef2f6;
+  --mark:#ffe08a; --mark-fg:#16202b; --sentbg:#e2edf5;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e141b; --surface:#16202a; --fg:#e5eaf0; --muted:#98a5b3; --line:#283544;
+  --accent:#7db7da; --accent-fg:#0b1218; --label:#f08a6c; --note:#1b2733;
+  --mark:#6b5a1e; --mark-fg:#fff6d9; --sentbg:#1e3346; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141b; --surface:#16202a; --fg:#e5eaf0; --muted:#98a5b3; --line:#283544;
+  --accent:#7db7da; --accent-fg:#0b1218; --label:#f08a6c; --note:#1b2733;
+  --mark:#6b5a1e; --mark-fg:#fff6d9; --sentbg:#1e3346; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:46rem;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:6px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+h1{font-family:var(--serif);font-weight:600;font-size:1.6rem;line-height:1.2;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px;margin:0;max-width:62ch;line-height:1.5}
+.player{position:sticky;top:env(safe-area-inset-top,0px);z-index:2;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+button{font:500 14px var(--sans);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);min-width:7.5rem}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+select{font:14px var(--sans);max-width:16rem;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+input[type=range]{width:7rem;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent)}
+.rate{font-variant-numeric:tabular-nums;min-width:2.8rem;color:var(--fg)}
+.progress{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+details.sheet{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+details.sheet summary{cursor:pointer;font-weight:500;font-size:14px}
+.tablebox{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--sentbg)}
+article{display:grid;gap:14px}
+section.slide{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px clamp(16px,4vw,30px);display:grid;gap:12px;scroll-margin-top:96px;min-width:0}
+.meta{margin:0;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meta b{color:var(--label);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+section.slide h2{font-family:var(--serif);font-size:1.25rem;font-weight:600;line-height:1.3;margin:0;text-wrap:balance}
+section.slide p.t{font-family:var(--serif);font-size:1.12rem;line-height:1.75;margin:0;max-width:65ch}
+.note-box{margin:0;font-size:14px;font-style:italic;color:var(--muted);background:var(--note);border-radius:8px;padding:10px 12px}
+.s{border-radius:3px;cursor:pointer;transition:background-color .1s}
+.s:hover{text-decoration:underline dotted var(--muted)}
+.s.on{background:var(--sentbg)}
+.w.on{background:var(--mark);color:var(--mark-fg);border-radius:2px}
+.foot{font-size:13px;color:var(--muted);margin:0;line-height:1.5}
+.warn{font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px}
+@media (prefers-reduced-motion: reduce){.s{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">PROM06 presentation · speaker script</span>
+    <h1>Evaluating AI-Driven Security Review in Modern DevSecOps Pipelines</h1>
+    <p class="sub" id="intro"></p>
+  </header>
+
+  <div class="player">
+    <label for="slide">Slide <select id="slide"></select></label>
+    <button class="primary" id="play" type="button">▶ Play</button>
+    <button id="stop" type="button" disabled>■ Stop</button>
+    <label for="voice">Voice <select id="voice"></select></label>
+    <label for="rate">Speed <input id="rate" type="range" min="0.7" max="1.3" step="0.05" value="0.95"><span class="rate" id="rateval">0.95×</span></label>
+    <label for="autonext"><input id="autonext" type="checkbox" checked> Go on to the next slide</label>
+    <label for="announce"><input id="announce" type="checkbox" checked> Say slide numbers</label>
+    <span class="progress" id="progress"></span>
+  </div>
+  <div class="warn" id="nosupport" hidden>This browser can't read text aloud. Try Chrome, Edge or Safari, or use Read Aloud in Word.</div>
+
+  <details class="sheet" id="sheet">
+    <summary>Run sheet: time for each slide</summary>
+    <div class="tablebox"><table>
+      <thead><tr><th>Slide</th><th>Title</th><th class="num">Time</th><th class="num">Running total</th></tr></thead>
+      <tbody id="sheetbody"></tbody>
+    </table></div>
+  </details>
+
+  <article id="text"></article>
+  <p class="foot">Voices come from your own device. The times assume you speak at about 125 words a minute, so the read-aloud voice will not match them exactly. Grey boxes are notes for you and are not read aloud.</p>
+</div>
+
+<script>
+const SLIDES = [{"n":1,"title":"Title and introduction","time":"0:45","total":"0:45","paras":[{"text":"Hello, my name is Abdul Waheed. This is my PROM06 research project for the MSc in Computer Science with Cybersecurity at the University of Sunderland. My supervisor is Liz Gandy."},{"text":"My project evaluates AI-driven security review in a DevSecOps pipeline. In simple terms, I built a pipeline where three reviewers check the same Terraform code: two well-known scanners, Checkov and tfsec, and an AI reviewer. Then I compared their results."},{"text":"I’ll explain why this matters, what I built, how I tested it, what I found and what it means."}]},{"n":2,"title":"Can an AI reviewer catch what scanners miss?","time":"1:25","total":"2:10","paras":[{"text":"Today, cloud infrastructure is written as code. With Terraform, one insecure line, such as a firewall rule open to the whole internet, is copied into every environment that uses it. And in the cloud, setting things up securely is the customer’s job, not the provider’s."},{"text":"Most teams catch these mistakes with rule-based scanners. They are fast and consistent, but they only find what their rules describe. And developers often ignore warnings that are noisy or hard to understand."},{"text":"AI reviewers work differently. They read the whole configuration and explain problems in plain language. But they can also be confidently wrong, and give different answers to the same question."},{"text":"So my aim was to evaluate how well an AI security reviewer works in a DevSecOps pipeline, compared with Checkov and tfsec. I asked four questions: how accurate it is, how good its fixes are, how it is likely to affect developer understanding, and what problems come up in practice. My objectives were to review the literature, build the pipeline, test it against fixed answers, and find its benefits and limits."}]},{"n":3,"title":"How the literature shaped the study","time":"1:20","total":"3:30","paras":[{"text":"The research I read shaped how I designed this study."},{"text":"Johnson and colleagues found that developers stop using tools with noisy, unclear warnings. So I didn’t only count what each tool found. I also counted false alarms and scored the explanations."},{"text":"Rahman and colleagues listed common security mistakes in infrastructure code, such as open network rules and secrets written into the code. Several of my test cases are exactly these mistakes."},{"text":"Some tools, like the one by Li and colleagues, give the scanner’s results to the AI. Then you can’t tell what the AI found by itself. So I kept my AI reviewer separate."},{"text":"I added two more ideas once my early results showed they mattered. AI can answer the same question differently, so I ran every review three times. And AI fixes can be wrong, so I applied every fix and tested it again."},{"text":"The gap is simple: there are very few fair, direct comparisons of an AI reviewer with Terraform scanners."}]},{"n":4,"title":"What I built: three independent reviewers","time":"1:10","total":"4:40","paras":[{"text":"This is what I built. When a developer opens a pull request with Terraform code, GitHub Actions starts one job."},{"text":"First, it checks that the code is valid. It never deploys anything."},{"text":"Then three reviewers check the same code. Checkov and tfsec use fixed rules. My AI reviewer sends all the Terraform files, a short security policy and the README to Claude, and asks for a structured answer with at most three findings. Each tool posts its own comment on the pull request, and no tool sees another tool’s results."},{"text":"On the right are real results from pull request 71. In this test, SSH is open to the whole internet. Checkov passed seven checks and found nothing, so it missed the problem. tfsec flagged it as critical. The AI reviewer flagged it as high, and explained the risk and the fix."},{"note":"Optional demo, about 30 seconds: open pull request 71 on GitHub and scroll through the three comments."},{"text":"All the code and evidence are public on my GitHub."}]},{"n":5,"title":"How I tested it: fixed ground truth, repeated runs","time":"1:25","total":"6:05","paras":[{"text":"Here is how I tested it."},{"text":"I wrote fifteen Terraform test cases. For each one, I wrote down the correct answer before running any tool. I call this the ground truth. Twelve cases have a security problem. Three are safe, including a web server that is meant to be public. These check for false alarms."},{"text":"I opened each case as a pull request and ran it twice more. With one extra run after a failed one, that gave forty-six runs. I checked every result against the ground truth and scored the AI on six criteria I fixed in advance. Finally, I applied the AI’s own fixes and tested them again."},{"text":"One discovery changed the study. When I traced my early results back, I found the AI had been given the scanners’ findings, so those results were not independent. I fixed the workflow in pull request 69, ran every case with the AI working on its own, and checked all forty-six runs to prove it."},{"text":"Everything was synthetic: fake secrets, nothing deployed and no personal data."}]},{"n":6,"title":"RQ1: the AI detected more than both scanners","time":"1:25","total":"7:30","paras":[{"text":"Now the results. My first question was about detection."},{"text":"Out of twelve cases with a problem, Checkov found five and tfsec found four. Together, they found eight. The AI reviewer found eleven, and part of a twelfth. In that case, it noticed the problem every time but showed it to the developer only once."},{"text":"Three things stand out. First, three problems were found only by the AI: two secrets written into the code, and a role with too much access, which it spotted by comparing it with a separate requirements file."},{"text":"Second, the scanners barely overlapped. Only one case was caught by both. And Checkov missed rules open to 0.0.0.0/0, but caught the same rule written as a star."},{"text":"Third, the AI made a different kind of mistake. Three of nine runs on safe cases raised a finding. Of the forty-five findings it posted, 82 per cent were correct, or 89 per cent if three findings about weaknesses in my own test files count as valid."},{"text":"These numbers describe my fifteen cases only, not the real world."}]},{"n":7,"title":"RQ2 and RQ3: useful advice, but some false claims","time":"1:30","total":"9:00","paras":[{"text":"My second question was about the quality of the AI’s fixes. I didn’t just read them. I applied them."},{"text":"All twelve fixes solved the problem and passed Terraform’s checks. For eight of them, a scanner also confirmed the fix. When the AI reviewed its own fixes, nine of the twelve no longer raised the problem."},{"text":"But one piece of advice was simply wrong. The AI said a role definition needs tags. When I applied that, Terraform failed with the error you can see here."},{"text":"My third question was about the likely effect on developers’ understanding. I judged this from the feedback itself. The chart shows the average scores out of two. The AI explained what was wrong, why it mattered and how to fix it, in plain language. The scanners only gave a rule ID and one short line. So the likely effect is positive."},{"text":"The lowest score was for the accuracy of explanations. Sometimes the AI stated something false with confidence, and a developer could learn it as fact. These scores come from one scoring pass with AI help, and no second rater."}]},{"n":8,"title":"RQ4: code comments changed the AI’s verdict","time":"1:30","total":"10:30","paras":[{"text":"My fourth question was about practical challenges, and this was my most surprising finding."},{"text":"On the left is the same fix, reviewed twice. The only difference is a comment in the code."},{"text":"In version A, an old comment still said “Deliberately unrestricted SSH access”. The AI gave its own fix a high-severity finding and quoted that comment. In version B, I only corrected the comment, and the AI approved the change with just a low note. Another test case behaved the same way."},{"text":"So text in the code can change the AI’s verdict, even when the code is the same. This is a form of what Greshake and colleagues call indirect prompt injection. In a real team, anyone who can write a comment could influence the AI."},{"text":"I found three more challenges. The same input gave different answers: one case was classified three different ways in four runs. Some real findings were hidden from the developer, and pull requests that only delete files skipped the AI completely. Time was not a problem: the AI took about thirty seconds, and feedback arrived in under two minutes."}]},{"n":9,"title":"Evaluation: what holds up, and its limits","time":"1:20","total":"11:50","paras":[{"text":"So, how far can we trust these results?"},{"text":"Some findings are strong. Scanners only cover what their rules describe. The two scanners complemented each other. The AI found problems that need context, and its mistakes were less predictable."},{"text":"But there are real limits. I used fifteen test cases that I built myself, one cloud, one AI model and one prompt. I also chose some cases where scanner rules were weak, which makes the AI look better. As Ding and colleagues warn, test sets like this can flatter AI. Comments in my test files may have given the AI hints. And the scoring was done once, without a second person."},{"text":"My biggest lesson came from my own mistake. Results I first thought were independent were not. Fixing that cost time, but it saved the study. Now I only trust a result when I can link it to a run, a commit and the raw output."},{"text":"Overall, all four objectives were met, within the limits of this sample."}]},{"n":10,"title":"Conclusion: an advisor beside scanners, not a gate","time":"1:10","total":"13:00","paras":[{"text":"So, can AI improve the security review of infrastructure code? On these fifteen cases, my answer is a qualified yes. The AI found everything the scanners found, plus three problems they missed. But its mistakes were less predictable. So it should support the scanners, not replace them, and it should not decide which changes get merged."},{"text":"My recommendations are on the left: let the scanners enforce and the AI advise, use more than one scanner, treat comments as untrusted, show uncertain findings, test every AI fix automatically, and review changes that only delete files."},{"text":"For future work, I would test real-world Terraform changes, run many more reviews across different AI models, study comment manipulation on purpose, and test the feedback with real developers."},{"text":"The references are on this slide, and the code and evidence are on GitHub. Thank you for listening."}]}];
+const META = {"words":"1,600","minutes":"13"};
+const $ = id => document.getElementById(id);
+const textEl = $('text'), playBtn = $('play'), stopBtn = $('stop'), slideSel = $('slide');
+const autoNext = $('autonext'), announce = $('announce'), voiceSel = $('voice'), rateIn = $('rate'), rateVal = $('rateval'), progress = $('progress');
+
+$('intro').textContent = `About ${META.words} words, about ${META.minutes} minutes at a steady pace. Press Play to hear the script read aloud, slide by slide. The sentence being read is shaded; click any sentence to start from there.`;
+
+SLIDES.forEach((s, i) => {
+  const o = document.createElement('option'); o.value = i; o.textContent = `${s.n} · ${s.title} (${s.time})`; slideSel.appendChild(o);
+  const tr = document.createElement('tr'); tr.tabIndex = 0;
+  [String(s.n), s.title, s.time, s.total].forEach((v, k) => { const td = document.createElement('td'); td.textContent = v; if (k >= 2) td.className = 'num'; tr.appendChild(td); });
+  const go = () => jumpTo(i); tr.addEventListener('click', go); tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  $('sheetbody').appendChild(tr);
+});
+
+// Build the page: each sentence is a clickable span made of word spans; slide titles are items too
+let SENT = []; const firstOf = [];
+function splitSentences(t){
+  const parts = t.split(/(?<=[.!?])\s+(?=[A-Z0-9“"(‘])/); const out = [];
+  parts.forEach(p => { if (out.length && /\b(e\.g|i\.e|etc|vs)\.$/i.test(out[out.length - 1])) out[out.length - 1] += ' ' + p; else out.push(p); });
+  return out.filter(s => s.trim());
+}
+function wordSpans(host, text){
+  text.split(/(\s+)/).forEach(tok => { if (!tok || /^\s+$/.test(tok)) host.appendChild(document.createTextNode(tok)); else { const w = document.createElement('span'); w.className = 'w'; w.textContent = tok; host.appendChild(w); } });
+}
+SLIDES.forEach((s, si) => {
+  const sec = document.createElement('section'); sec.className = 'slide'; sec.id = 'slide-' + s.n;
+  const meta = document.createElement('p'); meta.className = 'meta';
+  const b = document.createElement('b'); b.textContent = `Slide ${s.n} of ${SLIDES.length}`; meta.appendChild(b);
+  meta.appendChild(document.createTextNode(` · about ${s.time} · ${s.total} in total`)); sec.appendChild(meta);
+  const h = document.createElement('h2'); const hs = document.createElement('span'); hs.className = 's'; hs.textContent = s.title; h.appendChild(hs); sec.appendChild(h);
+  firstOf[si] = SENT.length; const hi = SENT.length;
+  SENT.push({ el: hs, text: s.title, head: true, slide: si });
+  hs.addEventListener('click', () => { if (synth) start(hi); });
+  s.paras.forEach(p => {
+    if (p.note) { const n = document.createElement('p'); n.className = 'note-box'; n.textContent = p.note; sec.appendChild(n); return; }
+    const para = document.createElement('p'); para.className = 't';
+    const sents = splitSentences(p.text);
+    sents.forEach((sent, j) => {
+      const sp = document.createElement('span'); sp.className = 's'; const idx = SENT.length;
+      wordSpans(sp, sent); sp.addEventListener('click', () => { if (synth) start(idx); });
+      para.appendChild(sp); if (j < sents.length - 1) para.appendChild(document.createTextNode(' '));
+      SENT.push({ el: sp, text: sent, head: false, slide: si });
+    });
+    sec.appendChild(para);
+  });
+  textEl.appendChild(sec);
+});
+
+function speechText(t){
+  return t.replace(/\btfsec\b/g, 'T F sec').replace(/\bDevSecOps\b/g, 'Dev Sec Ops').replace(/\bMSc\b/g, 'M S C')
+    .replace(/\bPROM06\b/g, 'PROM zero six').replace(/\bREADME\b/g, 'read me')
+    .replace(/0\.0\.0\.0\/0/g, 'zero dot zero dot zero dot zero slash zero').replace(/–/g, ' to ');
+}
+
+const synth = window.speechSynthesis;
+if (!synth || typeof SpeechSynthesisUtterance === 'undefined') { $('nosupport').hidden = false; playBtn.disabled = true; }
+
+let voices = [], state = 'idle', cur = 0, runId = 0, playSlide = 0;
+function loadVoices(){
+  if (!synth) return;
+  voices = synth.getVoices().filter(v => /^en/i.test(v.lang)); if (!voices.length) voices = synth.getVoices();
+  const rank = v => (/Serena|Sonia|Libby|Google UK English Female/i.test(v.name) ? -2 : 0) + (/en-GB/i.test(v.lang) ? 0 : /^en/i.test(v.lang) ? 1 : 2) + (/natural|neural|online|premium|enhanced/i.test(v.name) ? -0.5 : 0);
+  voices.sort((a, b) => rank(a) - rank(b));
+  voiceSel.innerHTML = '';
+  voices.forEach((v, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${v.name} (${v.lang})`; voiceSel.appendChild(o); });
+  try { const sv = localStorage.getItem('prom06-voice'); const k = voices.findIndex(v => v.name === sv); if (k >= 0) voiceSel.value = k; } catch (e) {}
+}
+loadVoices(); if (synth) synth.onvoiceschanged = loadVoices;
+try { const r = localStorage.getItem('prom06-script-rate'); if (r) { rateIn.value = r; rateVal.textContent = (+r).toFixed(2) + '×'; } } catch (e) {}
+
+function clearMarks(){ textEl.querySelectorAll('.on').forEach(e => e.classList.remove('on')); }
+function setState(s){ state = s; playBtn.textContent = s === 'playing' ? '❚❚ Pause' : s === 'paused' ? '▶ Resume' : '▶ Play'; stopBtn.disabled = s === 'idle'; }
+function idleText(){ const s = SLIDES[+slideSel.value]; return `Slide ${s.n} of ${SLIDES.length} · ${s.time}`; }
+function finish(msg){ clearMarks(); setState('idle'); progress.textContent = msg || idleText(); }
+function scrollToEl(el){ el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
+
+function speakFrom(i, id){
+  if (id !== runId) return;
+  if (i >= SENT.length) { cur = 0; slideSel.value = 0; finish('Finished'); return; }
+  const s = SENT[i];
+  if (s.slide !== playSlide) {
+    if (!autoNext.checked) { cur = firstOf[s.slide]; slideSel.value = s.slide; finish(`End of slide ${SLIDES[playSlide].n}`); return; }
+    playSlide = s.slide;
+  }
+  if (s.head && !announce.checked) { speakFrom(i + 1, id); return; }
+  cur = i; clearMarks(); s.el.classList.add('on'); scrollToEl(s.el);
+  slideSel.value = s.slide;
+  const inSlide = SENT.filter(x => x.slide === s.slide && !x.head);
+  const k = inSlide.indexOf(s) + 1;
+  progress.textContent = `Slide ${SLIDES[s.slide].n} of ${SLIDES.length}` + (s.head ? '' : ` · ${k} / ${inSlide.length}`);
+  const say = s.head ? `Slide ${SLIDES[s.slide].n}.` : speechText(s.text);
+  const u = new SpeechSynthesisUtterance(say);
+  const v = voices[+voiceSel.value]; if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
+  u.rate = +rateIn.value;
+  if (!s.head && say === s.text) { // word highlighting only when speech matches the page text exactly
+    const words = [...s.el.querySelectorAll('.w')];
+    const starts = []; let p = 0; s.text.split(/(\s+)/).forEach(t => { if (t && !/^\s+$/.test(t)) starts.push(p); p += t.length; });
+    u.onboundary = e => { if (typeof e.charIndex !== 'number') return; let q = 0; while (q + 1 < starts.length && starts[q + 1] <= e.charIndex) q++; words.forEach(w => w.classList.remove('on')); if (words[q]) words[q].classList.add('on'); };
+  }
+  u.onend = () => setTimeout(() => speakFrom(i + 1, id), s.head ? 350 : 120);
+  u.onerror = e => { if (e.error !== 'interrupted' && e.error !== 'canceled') speakFrom(i + 1, id); };
+  synth.speak(u);
+}
+function start(from){ runId++; synth.cancel(); setState('playing'); playSlide = SENT[from].slide; const id = runId; setTimeout(() => speakFrom(from, id), 60); }
+function jumpTo(si){
+  slideSel.value = si; cur = firstOf[si]; scrollToEl($('slide-' + SLIDES[si].n));
+  if (state !== 'idle' && synth) start(cur); else progress.textContent = idleText();
+}
+
+playBtn.addEventListener('click', () => {
+  if (!synth) return;
+  if (state === 'idle') start(cur);
+  else if (state === 'playing') { synth.pause(); setState('paused'); }
+  else { synth.resume(); setState('playing'); }
+});
+stopBtn.addEventListener('click', () => { runId++; if (synth) synth.cancel(); finish(); });
+slideSel.addEventListener('change', () => jumpTo(+slideSel.value));
+rateIn.addEventListener('input', () => { rateVal.textContent = (+rateIn.value).toFixed(2) + '×'; });
+rateIn.addEventListener('change', () => { try { localStorage.setItem('prom06-script-rate', rateIn.value); } catch (e) {} if (state !== 'idle') start(cur); });
+voiceSel.addEventListener('change', () => { try { localStorage.setItem('prom06-voice', voices[+voiceSel.value].name); } catch (e) {} if (state !== 'idle') start(cur); });
+progress.textContent = idleText();
+</script>

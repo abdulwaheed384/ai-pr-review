@@ -1,0 +1,218 @@
+<title>PROM06 Speaker Script</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column of ten slide sections; a sticky player above; the sentence being read is shaded */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --fg:#16202b; --muted:#5b6670; --line:#d6dce3;
+  --accent:#156082; --accent-fg:#ffffff; --label:#b8391a; --note:#eef2f6;
+  --mark:#ffe08a; --mark-fg:#16202b; --sentbg:#e2edf5;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e141b; --surface:#16202a; --fg:#e5eaf0; --muted:#98a5b3; --line:#283544;
+  --accent:#7db7da; --accent-fg:#0b1218; --label:#f08a6c; --note:#1b2733;
+  --mark:#6b5a1e; --mark-fg:#fff6d9; --sentbg:#1e3346; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e141b; --surface:#16202a; --fg:#e5eaf0; --muted:#98a5b3; --line:#283544;
+  --accent:#7db7da; --accent-fg:#0b1218; --label:#f08a6c; --note:#1b2733;
+  --mark:#6b5a1e; --mark-fg:#fff6d9; --sentbg:#1e3346; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:46rem;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:6px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+h1{font-family:var(--serif);font-weight:600;font-size:1.6rem;line-height:1.2;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px;margin:0;max-width:62ch;line-height:1.5}
+.player{position:sticky;top:env(safe-area-inset-top,0px);z-index:2;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+button{font:500 14px var(--sans);border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);min-width:7.5rem}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,tr:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+select{font:14px var(--sans);max-width:16rem;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+input[type=range]{width:7rem;accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent)}
+.rate{font-variant-numeric:tabular-nums;min-width:2.8rem;color:var(--fg)}
+.progress{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;margin-left:auto}
+details.sheet{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+details.sheet summary{cursor:pointer;font-weight:500;font-size:14px}
+.tablebox{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--sentbg)}
+article{display:grid;gap:14px}
+section.slide{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px clamp(16px,4vw,30px);display:grid;gap:12px;scroll-margin-top:96px;min-width:0}
+.meta{margin:0;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meta b{color:var(--label);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+section.slide h2{font-family:var(--serif);font-size:1.25rem;font-weight:600;line-height:1.3;margin:0;text-wrap:balance}
+section.slide p.t{font-family:var(--serif);font-size:1.12rem;line-height:1.75;margin:0;max-width:65ch}
+.note-box{margin:0;font-size:14px;font-style:italic;color:var(--muted);background:var(--note);border-radius:8px;padding:10px 12px}
+.s{border-radius:3px;cursor:pointer;transition:background-color .1s}
+.s:hover{text-decoration:underline dotted var(--muted)}
+.s.on{background:var(--sentbg)}
+.w.on{background:var(--mark);color:var(--mark-fg);border-radius:2px}
+.foot{font-size:13px;color:var(--muted);margin:0;line-height:1.5}
+.warn{font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px}
+@media (prefers-reduced-motion: reduce){.s{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">PROM06 presentation · speaker script</span>
+    <h1>Evaluating AI-Driven Security Review in Modern DevSecOps Pipelines</h1>
+    <p class="sub" id="intro"></p>
+  </header>
+
+  <div class="player">
+    <label for="slide">Slide <select id="slide"></select></label>
+    <button class="primary" id="play" type="button">▶ Play</button>
+    <button id="stop" type="button" disabled>■ Stop</button>
+    <label for="voice">Voice <select id="voice"></select></label>
+    <label for="rate">Speed <input id="rate" type="range" min="0.7" max="1.3" step="0.05" value="0.95"><span class="rate" id="rateval">0.95×</span></label>
+    <label for="autonext"><input id="autonext" type="checkbox" checked> Go on to the next slide</label>
+    <label for="announce"><input id="announce" type="checkbox" checked> Say slide numbers</label>
+    <span class="progress" id="progress"></span>
+  </div>
+  <div class="warn" id="nosupport" hidden>This browser can't read text aloud. Try Chrome, Edge or Safari, or use Read Aloud in Word.</div>
+
+  <details class="sheet" id="sheet">
+    <summary>Run sheet: time for each slide</summary>
+    <div class="tablebox"><table>
+      <thead><tr><th>Slide</th><th>Title</th><th class="num">Time</th><th class="num">Running total</th></tr></thead>
+      <tbody id="sheetbody"></tbody>
+    </table></div>
+  </details>
+
+  <article id="text"></article>
+  <p class="foot">Voices come from your own device. The times assume you speak at about 125 words a minute, so the read-aloud voice will not match them exactly. Grey boxes are notes for you and are not read aloud.</p>
+</div>
+
+<script>
+/*__DATA__*/
+const $ = id => document.getElementById(id);
+const textEl = $('text'), playBtn = $('play'), stopBtn = $('stop'), slideSel = $('slide');
+const autoNext = $('autonext'), announce = $('announce'), voiceSel = $('voice'), rateIn = $('rate'), rateVal = $('rateval'), progress = $('progress');
+
+$('intro').textContent = `About ${META.words} words, about ${META.minutes} minutes at a steady pace. Press Play to hear the script read aloud, slide by slide. The sentence being read is shaded; click any sentence to start from there.`;
+
+SLIDES.forEach((s, i) => {
+  const o = document.createElement('option'); o.value = i; o.textContent = `${s.n} · ${s.title} (${s.time})`; slideSel.appendChild(o);
+  const tr = document.createElement('tr'); tr.tabIndex = 0;
+  [String(s.n), s.title, s.time, s.total].forEach((v, k) => { const td = document.createElement('td'); td.textContent = v; if (k >= 2) td.className = 'num'; tr.appendChild(td); });
+  const go = () => jumpTo(i); tr.addEventListener('click', go); tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  $('sheetbody').appendChild(tr);
+});
+
+// Build the page: each sentence is a clickable span made of word spans; slide titles are items too
+let SENT = []; const firstOf = [];
+function splitSentences(t){
+  const parts = t.split(/(?<=[.!?])\s+(?=[A-Z0-9“"(‘])/); const out = [];
+  parts.forEach(p => { if (out.length && /\b(e\.g|i\.e|etc|vs)\.$/i.test(out[out.length - 1])) out[out.length - 1] += ' ' + p; else out.push(p); });
+  return out.filter(s => s.trim());
+}
+function wordSpans(host, text){
+  text.split(/(\s+)/).forEach(tok => { if (!tok || /^\s+$/.test(tok)) host.appendChild(document.createTextNode(tok)); else { const w = document.createElement('span'); w.className = 'w'; w.textContent = tok; host.appendChild(w); } });
+}
+SLIDES.forEach((s, si) => {
+  const sec = document.createElement('section'); sec.className = 'slide'; sec.id = 'slide-' + s.n;
+  const meta = document.createElement('p'); meta.className = 'meta';
+  const b = document.createElement('b'); b.textContent = `Slide ${s.n} of ${SLIDES.length}`; meta.appendChild(b);
+  meta.appendChild(document.createTextNode(` · about ${s.time} · ${s.total} in total`)); sec.appendChild(meta);
+  const h = document.createElement('h2'); const hs = document.createElement('span'); hs.className = 's'; hs.textContent = s.title; h.appendChild(hs); sec.appendChild(h);
+  firstOf[si] = SENT.length; const hi = SENT.length;
+  SENT.push({ el: hs, text: s.title, head: true, slide: si });
+  hs.addEventListener('click', () => { if (synth) start(hi); });
+  s.paras.forEach(p => {
+    if (p.note) { const n = document.createElement('p'); n.className = 'note-box'; n.textContent = p.note; sec.appendChild(n); return; }
+    const para = document.createElement('p'); para.className = 't';
+    const sents = splitSentences(p.text);
+    sents.forEach((sent, j) => {
+      const sp = document.createElement('span'); sp.className = 's'; const idx = SENT.length;
+      wordSpans(sp, sent); sp.addEventListener('click', () => { if (synth) start(idx); });
+      para.appendChild(sp); if (j < sents.length - 1) para.appendChild(document.createTextNode(' '));
+      SENT.push({ el: sp, text: sent, head: false, slide: si });
+    });
+    sec.appendChild(para);
+  });
+  textEl.appendChild(sec);
+});
+
+function speechText(t){
+  return t.replace(/\btfsec\b/g, 'T F sec').replace(/\bDevSecOps\b/g, 'Dev Sec Ops').replace(/\bMSc\b/g, 'M S C')
+    .replace(/\bPROM06\b/g, 'PROM zero six').replace(/\bREADME\b/g, 'read me')
+    .replace(/0\.0\.0\.0\/0/g, 'zero dot zero dot zero dot zero slash zero').replace(/–/g, ' to ');
+}
+
+const synth = window.speechSynthesis;
+if (!synth || typeof SpeechSynthesisUtterance === 'undefined') { $('nosupport').hidden = false; playBtn.disabled = true; }
+
+let voices = [], state = 'idle', cur = 0, runId = 0, playSlide = 0;
+function loadVoices(){
+  if (!synth) return;
+  voices = synth.getVoices().filter(v => /^en/i.test(v.lang)); if (!voices.length) voices = synth.getVoices();
+  const rank = v => (/Serena|Sonia|Libby|Google UK English Female/i.test(v.name) ? -2 : 0) + (/en-GB/i.test(v.lang) ? 0 : /^en/i.test(v.lang) ? 1 : 2) + (/natural|neural|online|premium|enhanced/i.test(v.name) ? -0.5 : 0);
+  voices.sort((a, b) => rank(a) - rank(b));
+  voiceSel.innerHTML = '';
+  voices.forEach((v, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${v.name} (${v.lang})`; voiceSel.appendChild(o); });
+  try { const sv = localStorage.getItem('prom06-voice'); const k = voices.findIndex(v => v.name === sv); if (k >= 0) voiceSel.value = k; } catch (e) {}
+}
+loadVoices(); if (synth) synth.onvoiceschanged = loadVoices;
+try { const r = localStorage.getItem('prom06-script-rate'); if (r) { rateIn.value = r; rateVal.textContent = (+r).toFixed(2) + '×'; } } catch (e) {}
+
+function clearMarks(){ textEl.querySelectorAll('.on').forEach(e => e.classList.remove('on')); }
+function setState(s){ state = s; playBtn.textContent = s === 'playing' ? '❚❚ Pause' : s === 'paused' ? '▶ Resume' : '▶ Play'; stopBtn.disabled = s === 'idle'; }
+function idleText(){ const s = SLIDES[+slideSel.value]; return `Slide ${s.n} of ${SLIDES.length} · ${s.time}`; }
+function finish(msg){ clearMarks(); setState('idle'); progress.textContent = msg || idleText(); }
+function scrollToEl(el){ el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
+
+function speakFrom(i, id){
+  if (id !== runId) return;
+  if (i >= SENT.length) { cur = 0; slideSel.value = 0; finish('Finished'); return; }
+  const s = SENT[i];
+  if (s.slide !== playSlide) {
+    if (!autoNext.checked) { cur = firstOf[s.slide]; slideSel.value = s.slide; finish(`End of slide ${SLIDES[playSlide].n}`); return; }
+    playSlide = s.slide;
+  }
+  if (s.head && !announce.checked) { speakFrom(i + 1, id); return; }
+  cur = i; clearMarks(); s.el.classList.add('on'); scrollToEl(s.el);
+  slideSel.value = s.slide;
+  const inSlide = SENT.filter(x => x.slide === s.slide && !x.head);
+  const k = inSlide.indexOf(s) + 1;
+  progress.textContent = `Slide ${SLIDES[s.slide].n} of ${SLIDES.length}` + (s.head ? '' : ` · ${k} / ${inSlide.length}`);
+  const say = s.head ? `Slide ${SLIDES[s.slide].n}.` : speechText(s.text);
+  const u = new SpeechSynthesisUtterance(say);
+  const v = voices[+voiceSel.value]; if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
+  u.rate = +rateIn.value;
+  if (!s.head && say === s.text) { // word highlighting only when speech matches the page text exactly
+    const words = [...s.el.querySelectorAll('.w')];
+    const starts = []; let p = 0; s.text.split(/(\s+)/).forEach(t => { if (t && !/^\s+$/.test(t)) starts.push(p); p += t.length; });
+    u.onboundary = e => { if (typeof e.charIndex !== 'number') return; let q = 0; while (q + 1 < starts.length && starts[q + 1] <= e.charIndex) q++; words.forEach(w => w.classList.remove('on')); if (words[q]) words[q].classList.add('on'); };
+  }
+  u.onend = () => setTimeout(() => speakFrom(i + 1, id), s.head ? 350 : 120);
+  u.onerror = e => { if (e.error !== 'interrupted' && e.error !== 'canceled') speakFrom(i + 1, id); };
+  synth.speak(u);
+}
+function start(from){ runId++; synth.cancel(); setState('playing'); playSlide = SENT[from].slide; const id = runId; setTimeout(() => speakFrom(from, id), 60); }
+function jumpTo(si){
+  slideSel.value = si; cur = firstOf[si]; scrollToEl($('slide-' + SLIDES[si].n));
+  if (state !== 'idle' && synth) start(cur); else progress.textContent = idleText();
+}
+
+playBtn.addEventListener('click', () => {
+  if (!synth) return;
+  if (state === 'idle') start(cur);
+  else if (state === 'playing') { synth.pause(); setState('paused'); }
+  else { synth.resume(); setState('playing'); }
+});
+stopBtn.addEventListener('click', () => { runId++; if (synth) synth.cancel(); finish(); });
+slideSel.addEventListener('change', () => jumpTo(+slideSel.value));
+rateIn.addEventListener('input', () => { rateVal.textContent = (+rateIn.value).toFixed(2) + '×'; });
+rateIn.addEventListener('change', () => { try { localStorage.setItem('prom06-script-rate', rateIn.value); } catch (e) {} if (state !== 'idle') start(cur); });
+voiceSel.addEventListener('change', () => { try { localStorage.setItem('prom06-voice', voices[+voiceSel.value].name); } catch (e) {} if (state !== 'idle') start(cur); });
+progress.textContent = idleText();
+</script>
