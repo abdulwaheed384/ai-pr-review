@@ -107,3 +107,4 @@
 | Appendix G | Dates removed from the plan-versus-actual table | Full draft 13 October 2026 | Completed |
 | Appendix G | Dates removed from the plan-versus-actual table | Planned 25 October 2026 (deadline 26 October 2026) | This submission |
 | Appendix G | Date removed | Assignment 1 review; reworked as Chapter 2 in October 2026 | Assignment 1 review, reworked as Chapter 2 |
+| 3.8 | List numbering restarted: the analysis steps continued the objectives list in 1.3 and showed 5–9 | 5. Classify each tool’s output against the ground truth … 9. Compute the metrics. | 1. Classify each tool’s output against the ground truth … 5. Compute the metrics. |
